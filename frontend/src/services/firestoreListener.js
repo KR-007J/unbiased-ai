@@ -1,18 +1,19 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
 
+// NEW DEPLOYMENT CONFIG (Sentinel-X HQ)
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  apiKey: "AIzaSyB1VBR_jWmCJUZOszy4pxauwHeCrV-M6_o",
+  authDomain: "sentinel-x-hq-core-110788.firebaseapp.com",
+  projectId: "sentinel-x-hq-core-110788",
+  storageBucket: "sentinel-x-hq-core-110788.firebasestorage.app",
+  messagingSenderId: "290759059169",
+  appId: "1:290759059169:web:0db6f8c402af670f4d39a0"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/**
- * Subscribes to the Sentinel-X real-time event stream.
- */
 export const subscribeToAlerts = (onUpdate, onError) => {
   try {
     const q = query(
@@ -27,7 +28,6 @@ export const subscribeToAlerts = (onUpdate, onError) => {
         return {
           id: doc.id,
           ...data,
-          // Safe date resolution: Firestore native object -> JS Date
           timestamp: data.firestore_created_at?.toDate?.() || new Date(data.created_at)
         };
       });
