@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "sentinel-x-hq-core-110788"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }
