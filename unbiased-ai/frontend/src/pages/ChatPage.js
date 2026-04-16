@@ -38,8 +38,9 @@ export default function ChatPage() {
     setLoading(true);
 
     try {
-      const history = messages.map((m) => ({ role: m.role, content: m.content }));
-      const data = await api.getChatResponse([...history, { role: 'user', content: msg }]);
+      // Skip the first message (system greeting) to ensure alternating roles for Gemini
+      const conversationHistory = messages.slice(1).map((m) => ({ role: m.role, content: m.content }));
+      const data = await api.getChatResponse([...conversationHistory, { role: 'user', content: msg }]);
       setMessages((m) => [...m, { role: 'assistant', content: data.response || data.content, timestamp: new Date() }]);
     } catch {
       toast.error('Neural link interrupted');

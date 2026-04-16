@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "unbiased-ai-krish-6789"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }

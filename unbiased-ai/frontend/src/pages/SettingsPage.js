@@ -8,7 +8,6 @@ export default function SettingsPage() {
   const user = useStore((s) => s.user);
   const setUser = useStore((s) => s.setUser);
   const [displayName, setDisplayName] = useState(user?.displayName || '');
-  const [geminiKey, setGeminiKey] = useState(localStorage.getItem('gemini_key') || '');
   const [saving, setSaving] = useState(false);
 
   const saveProfile = async () => {
@@ -21,10 +20,6 @@ export default function SettingsPage() {
     finally { setSaving(false); }
   };
 
-  const saveApiKey = () => {
-    localStorage.setItem('gemini_key', geminiKey);
-    toast.success('API key saved locally');
-  };
 
   const SECTIONS = [
     {
@@ -42,24 +37,6 @@ export default function SettingsPage() {
           <button className="btn-primary" onClick={saveProfile} disabled={saving} style={{ alignSelf: 'flex-start' }}>
             {saving ? 'SAVING...' : 'SAVE PROFILE'}
           </button>
-        </div>
-      ),
-    },
-    {
-      title: 'API CONFIGURATION', icon: '⚙',
-      content: (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ padding: '12px 16px', background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.2)', borderRadius: 8 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--gold)', marginBottom: 4 }}>⚠ IMPORTANT</div>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-muted)' }}>
-              In production, API keys should be stored as Supabase Edge Function secrets, not in the browser.
-            </div>
-          </div>
-          <div>
-            <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: 2, display: 'block', marginBottom: 8 }}>GEMINI API KEY</label>
-            <input className="input-cyber" type="password" value={geminiKey} onChange={(e) => setGeminiKey(e.target.value)} placeholder="AIza..." />
-          </div>
-          <button className="btn-primary" onClick={saveApiKey} style={{ alignSelf: 'flex-start' }}>SAVE KEY</button>
         </div>
       ),
     },
