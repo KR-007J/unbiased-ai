@@ -48,10 +48,18 @@ export default function HistoryPage() {
   return (
     <div style={{ padding: 32, maxWidth: 1200 }}>
       <div style={{ marginBottom: 32 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: 3, marginBottom: 8 }}>DATA ARCHIVE</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: 3, marginBottom: 8 }}>SOVEREIGN AUDIT TRAIL</div>
         <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 36 }}>
-          ANALYSIS <span className="text-neon-cyan">HISTORY</span>
+          NEURAL <span className="text-neon-cyan">ARCHIVE</span>
         </h1>
+        <div style={{ 
+          marginTop: 12, display: 'inline-flex', gap: 16, 
+          fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)',
+          letterSpacing: 2, padding: '4px 16px', borderRadius: 100,
+          background: 'rgba(0,245,255,0.05)', border: '1px solid rgba(0,245,255,0.2)'
+        }}>
+          ARCHITECT: KRISH JOSHI | STATUS: SOVEREIGN NODE ACTIVE
+        </div>
       </div>
 
       {/* Controls */}
