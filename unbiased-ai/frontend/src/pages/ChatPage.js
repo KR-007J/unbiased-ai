@@ -4,11 +4,11 @@ import { useStore } from '../store';
 import toast from 'react-hot-toast';
 
 const SUGGESTIONS = [
-  'What is confirmation bias and how does it affect news?',
-  'How can I write more inclusive job descriptions?',
-  'Explain the difference between explicit and implicit bias',
-  'What are common gender biases in AI systems?',
-  'How does media framing create political bias?',
+  'Forecast the bias evolution in climate reporting',
+  'Explain the mathematical logic of Sovereign Refraction',
+  'How does the Sentinel layer protect against sentiment manipulation?',
+  'Analyze the neural signature of a biased text',
+  'Differences between explicit bias and predictive vectors',
 ];
 
 export default function ChatPage() {
@@ -16,7 +16,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: 'Neural interface online. I\'m your Unbiased AI assistant — specialized in detecting, explaining, and eliminating bias in communication. Ask me anything about fairness, inclusion, and equitable language.',
+      content: 'Sovereign Neural Interface online. I am your Sentinel Arbiter. I can explain complex bias vectors, forecast manipulations, and refract biased discourse into pure objectivity. How may I assist your audit today?',
       timestamp: new Date(),
     },
   ]);
@@ -38,9 +38,12 @@ export default function ChatPage() {
     setLoading(true);
 
     try {
+      // Use the current analysis from the store as context for the chat
+      const currentAnalysis = useStore.getState().currentAnalysis;
+      
       // Skip the first message (system greeting) to ensure alternating roles for Gemini
       const conversationHistory = messages.slice(1).map((m) => ({ role: m.role, content: m.content }));
-      const data = await api.getChatResponse([...conversationHistory, { role: 'user', content: msg }]);
+      const data = await api.getChatResponse([...conversationHistory, { role: 'user', content: msg }], currentAnalysis);
       setMessages((m) => [...m, { role: 'assistant', content: data.response || data.content, timestamp: new Date() }]);
     } catch {
       toast.error('Neural link interrupted');

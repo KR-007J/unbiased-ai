@@ -4,14 +4,10 @@ import { useStore } from '../store';
 import { supabase } from '../supabase';
 import StatCard from '../components/StatCard';
 import BiasMeter from '../components/BiasMeter';
+import TruthPulse from '../components/TruthPulse';
 
 const BIAS_CATEGORIES = [
-  { key: 'gender', label: 'Gender', color: '#ff00aa' },
-  { key: 'racial', label: 'Racial', color: '#ff6600' },
-  { key: 'political', label: 'Political', color: '#8b00ff' },
-  { key: 'age', label: 'Age', color: '#ffd700' },
-  { key: 'cultural', label: 'Cultural', color: '#00f5ff' },
-  { key: 'socioeconomic', label: 'Socioeconomic', color: '#00ff88' },
+// ... existing categories
 ];
 
 export default function Dashboard() {
@@ -43,7 +39,6 @@ export default function Dashboard() {
         const avgScore = total > 0 ? data.reduce((s, d) => s + (d.bias_score || 0), 0) / total : 0;
         setStats({ total, biased, clean: total - biased, avgScore });
 
-        // Aggregate bias breakdown
         const breakdown = {};
         data.forEach((d) => {
           if (d.bias_types) {
@@ -62,51 +57,84 @@ export default function Dashboard() {
   const greeting = hour < 12 ? 'GOOD MORNING' : hour < 18 ? 'GOOD AFTERNOON' : 'GOOD EVENING';
 
   return (
-    <div style={{ padding: 32, maxWidth: 1400 }}>
+    <div style={{ padding: 32, maxWidth: 1600, margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ marginBottom: 40 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: 3, marginBottom: 8 }}>
-          {greeting}, OPERATOR
+      <div style={{ marginBottom: 40, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: 3, marginBottom: 8 }}>
+            {greeting}, OPERATOR
+          </div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 40, color: 'var(--text-primary)', margin: 0 }}>
+            <span className="holo-text">{user?.displayName?.toUpperCase() || 'SYSTEM'}</span>
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 8 }}>
+            Neural Governance Interface — <span className="text-neon-cyan">Sovereign Layer Active</span>
+          </p>
         </div>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 40, color: 'var(--text-primary)' }}>
-          <span className="holo-text">{user?.displayName?.toUpperCase() || 'DASHBOARD'}</span>
-        </h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginTop: 8 }}>
-          Neural bias analysis system — all systems operational
-        </p>
+        <div style={{ textAlign: 'right' }}>
+           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)', marginBottom: 4 }}>NODE STATUS</div>
+           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, color: 'var(--green)' }}>● SECURE</div>
+        </div>
       </div>
 
-      {/* Quick actions */}
-      <div style={{ display: 'flex', gap: 16, marginBottom: 40, flexWrap: 'wrap' }}>
-        {[
-          { label: 'ANALYZE TEXT', icon: '⬡', path: '/app/analyze', color: 'var(--cyan)' },
-          { label: 'COMPARE DOCS', icon: '⟺', path: '/app/compare', color: 'var(--blue)' },
-          { label: 'AI CHAT', icon: '◎', path: '/app/chat', color: 'var(--purple)' },
-        ].map((a) => (
-          <button key={a.path} onClick={() => navigate(a.path)} style={{
-            display: 'flex', alignItems: 'center', gap: 12, padding: '16px 24px',
-            background: `${a.color}10`, border: `1px solid ${a.color}30`,
-            borderRadius: 12, cursor: 'pointer', color: a.color,
-            fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 13, letterSpacing: 2,
-            transition: 'all 0.2s', backdropFilter: 'blur(10px)',
-          }}
-            onMouseEnter={e => { e.currentTarget.style.background = `${a.color}20`; e.currentTarget.style.boxShadow = `0 0 20px ${a.color}30`; }}
-            onMouseLeave={e => { e.currentTarget.style.background = `${a.color}10`; e.currentTarget.style.boxShadow = 'none'; }}>
-            <span style={{ fontSize: 20 }}>{a.icon}</span>
-            {a.label}
-          </button>
-        ))}
+      {/* Primary Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 0.8fr)', gap: 24, marginBottom: 40 }}>
+        
+        {/* Statistics Cluster */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <StatCard icon="◈" label="Total Audits" value={stats.total} color="var(--cyan)" delay={0} />
+          <StatCard icon="⚠" label="Neural Alerts" value={stats.biased} color="var(--red)" delay={100} />
+          <StatCard icon="✓" label="Clean Vectors" value={stats.clean} color="var(--green)" delay={200} />
+          <div className="glass-card" style={{ padding: 20 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--gold)', marginBottom: 8 }}>AGGREGATE TRUST INDEX</div>
+            <div style={{ fontSize: 24, fontWeight: 700, fontFamily: 'var(--font-display)' }}>{Math.round((1 - stats.avgScore) * 100)}%</div>
+            <div className="progress-bar" style={{ marginTop: 12, height: 4 }}>
+              <div className="progress-fill" style={{ width: `${(1 - stats.avgScore) * 100}%`, background: 'var(--gold)' }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Sentinel Truth Pulse */}
+        <div>
+          <TruthPulse />
+        </div>
+
+        {/* Quick Commands */}
+        <div className="glass-card" style={{ padding: 24 }}>
+           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)', marginBottom: 16, letterSpacing: 2 }}>CORE MODULES</div>
+           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {[
+              { label: 'NEURAL AUDIT', icon: '⬡', path: '/app/analyze', color: 'var(--cyan)' },
+              { label: 'WEB SCANNER', icon: '🌐', path: '/app/vision', color: 'var(--blue)' },
+              { label: 'BIAS COMPARISON', icon: '⟺', path: '/app/compare', color: 'var(--purple)' },
+              { label: 'FAIRNESS CHAT', icon: '◎', path: '/app/chat', color: 'var(--green)' },
+            ].map((a) => (
+              <button key={a.path} onClick={() => navigate(a.path)} style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: '14px',
+                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
+                borderRadius: 12, cursor: 'pointer', color: 'var(--text-primary)',
+                fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 12, letterSpacing: 1,
+                transition: 'all 0.2s', textAlign: 'left'
+              }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,245,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(0,245,255,0.2)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}>
+                <span style={{ fontSize: 18, color: a.color }}>{a.icon}</span>
+                {a.label}
+              </button>
+            ))}
+           </div>
+           
+           <div style={{ marginTop: 24, padding: 16, background: 'rgba(255,51,102,0.05)', borderRadius: 12, border: '1px solid rgba(255,51,102,0.1)' }}>
+              <div style={{ fontSize: 10, color: 'var(--red)', fontWeight: 700, marginBottom: 4 }}>SYSTEM MISSION</div>
+              <p style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
+                Maintain human objectivity against escalating synthetic bias vectors.
+              </p>
+           </div>
+        </div>
+
       </div>
 
-      {/* Stats grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 40 }}>
-        <StatCard icon="◈" label="Total Analyses" value={stats.total} color="var(--cyan)" delay={0} />
-        <StatCard icon="⚠" label="Biased Texts" value={stats.biased} color="var(--red)" delay={100} />
-        <StatCard icon="✓" label="Clean Texts" value={stats.clean} color="var(--green)" delay={200} />
-        <StatCard icon="%" label="Avg Bias Score" value={Math.round(stats.avgScore * 100)} unit="%" color="var(--gold)" delay={300} />
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 32 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24, marginBottom: 32 }}>
         {/* Bias breakdown */}
         <div className="glass-card" style={{ padding: 28 }}>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, marginBottom: 24, color: 'var(--text-primary)' }}>

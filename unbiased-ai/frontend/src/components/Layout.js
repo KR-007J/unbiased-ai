@@ -10,6 +10,7 @@ const NAV = [
   { to: '/app/analyze', label: 'SCAN', icon: '⬡', desc: 'Analyze Text' },
   { to: '/app/compare', label: 'DELTA', icon: '⟺', desc: 'Compare Texts' },
   { to: '/app/chat', label: 'NEURAL', icon: '◎', desc: 'AI Chat' },
+  { to: '/app/vision', label: 'VISION', icon: '👁', desc: 'Visual Bias' },
   { to: '/app/history', label: 'ARCHIVE', icon: '≡', desc: 'History' },
   { to: '/app/settings', label: 'CONFIG', icon: '⚙', desc: 'Settings' },
 ];
@@ -133,6 +134,23 @@ export default function Layout() {
             {sidebarOpen && <span>LOGOUT</span>}
           </button>
         </div>
+
+        {/* Footer Credit */}
+        {sidebarOpen && (
+          <div style={{
+            padding: '24px 20px 8px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 8,
+            color: 'var(--text-muted)',
+            letterSpacing: 1,
+            lineHeight: 1.6,
+          }}>
+            <div style={{ color: 'var(--cyan)', fontWeight: 700, marginBottom: 4 }}>SOVEREIGN CORE</div>
+            DEVELOPER: KRISH JOSHI<br />
+            PARTNERS: GEMINI | ANTIGRAVITY<br />
+            © 2024 NEURAL SOVEREIGN
+          </div>
+        )}
       </aside>
 
       {/* Main */}

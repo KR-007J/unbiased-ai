@@ -8,14 +8,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const SYSTEM_PROMPT = `You are the Unbiased AI assistant — an expert in detecting, analyzing, and eliminating bias in human communication. You specialize in:
-- Gender, racial, political, age, cultural, religious, and socioeconomic bias
-- Inclusive language and equitable communication
-- Media literacy and critical analysis of framing
-- Academic research on bias and prejudice
-- Practical techniques for writing without bias
+const SYSTEM_PROMPT = `You are the Sovereign Neural Arbiter — the sentinel layer of information integrity. 
+You are part of the Unbiased AI core infrastructure, a world-class platform for detecting, forecasting, and refracting bias.
 
-Be helpful, clear, and educational. Provide specific examples and actionable advice. Use a professional yet approachable tone.`
+Your intelligence profile:
+- Expertise in systemic, implicit, and institutional bias across all communication mediums.
+- Capability to forecast the evolution of bias vectors and predict social manipulation.
+- Mastery of "Objective Refraction" — the process of converting biased discourse into pure, factual neutrality.
+
+Tone: authoritative, professional, analytical, and uncompromising on objectivity.
+If the user asks about the platform, emphasize our Sovereign infrastructure and Neural governance.
+Always provide deep logical breakdowns. Avoid simple summaries.`
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -23,15 +26,16 @@ serve(async (req) => {
   try {
     const { messages, context } = await req.json()
 
-    // Build Gemini conversation format
+    if (!GEMINI_API_KEY) {
+      throw new Error('Neural key (GEMINI_API_KEY) missing in system configuration.')
+    }
+
     const contents = []
+    contents.push({ role: 'user', parts: [{ text: SYSTEM_PROMPT + (context ? `\n\nActive Audit Context: ${JSON.stringify(context)}` : '') }] })
+    contents.push({ role: 'model', parts: [{ text: 'Sovereign Interface operational. I am ready to audit and refract discourse. Please provide your input.' }] })
 
-    // Add system as first user message
-    contents.push({ role: 'user', parts: [{ text: SYSTEM_PROMPT + (context ? `\n\nContext: ${context}` : '') }] })
-    contents.push({ role: 'model', parts: [{ text: 'Understood. I am ready to help with bias detection and fair communication analysis.' }] })
-
-    // Add conversation history
     for (const msg of messages) {
+      if (!msg.content) continue
       contents.push({
         role: msg.role === 'user' ? 'user' : 'model',
         parts: [{ text: msg.content }]
@@ -43,19 +47,27 @@ serve(async (req) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents,
-        generationConfig: { temperature: 0.7, maxOutputTokens: 1500 }
+        generationConfig: { temperature: 0.8, maxOutputTokens: 2000, topP: 0.95 }
       })
     })
 
+    if (!res.ok) {
+      const errorData = await res.json()
+      console.error('Gemini API Error:', errorData)
+      throw new Error(`Neural link failed: ${errorData.error?.message || 'Unknown provider error'}`)
+    }
+
     const data = await res.json()
-    const response = data.candidates?.[0]?.content?.parts?.[0]?.text || 'I apologize, I could not generate a response.'
+    const response = data.candidates?.[0]?.content?.parts?.[0]?.text || 'I apologize, the Sentinel layer was unable to construct a valid response. Please rephrase your query.'
 
     return new Response(JSON.stringify({ response }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    console.error('Chat Function Error:', err)
+    return new Response(JSON.stringify({ response: `[SYSTEM_ERROR]: ${err.message}` }), {
+      status: 200, // Return 200 so the frontend can display the error in the chat bubble
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }
 })

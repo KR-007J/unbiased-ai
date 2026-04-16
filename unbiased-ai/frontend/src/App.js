@@ -15,6 +15,7 @@ import ChatPage from './pages/ChatPage';
 import HistoryPage from './pages/HistoryPage';
 import SettingsPage from './pages/SettingsPage';
 import AuthPage from './pages/AuthPage';
+import VisionPage from './pages/VisionPage';
 
 // Components
 import Layout from './components/Layout';
@@ -45,6 +46,26 @@ export default function App() {
         <ParticleField />
         <CustomCursor />
 
+        {/* Global Watermark */}
+        <div style={{
+          position: 'fixed',
+          bottom: 20,
+          right: 20,
+          zIndex: 9999,
+          pointerEvents: 'none',
+          opacity: 0.4,
+          fontFamily: 'var(--font-mono)',
+          fontSize: 10,
+          letterSpacing: 2,
+          color: 'var(--cyan)',
+          textAlign: 'right',
+          textShadow: '0 0 5px var(--cyan)',
+        }}>
+          DEVELOPER: KRISH JOSHI<br />
+          PARTNERS: GEMINI & ANTIGRAVITY<br />
+          <span style={{ fontSize: 8 }}>SOVEREIGN TRUTH ENGINE v2.5</span>
+        </div>
+
         <Toaster
           position="top-right"
           toastOptions={{
@@ -68,6 +89,7 @@ export default function App() {
             <Route path="compare" element={<ComparePage />} />
             <Route path="chat" element={<ChatPage />} />
             <Route path="history" element={<HistoryPage />} />
+            <Route path="vision" element={<VisionPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>

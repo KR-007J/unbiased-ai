@@ -139,7 +139,7 @@ body::after {
 .glass-card:hover {
   border-color: var(--glass-border-hover);
   box-shadow: var(--shadow-card), var(--shadow-glow-blue), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  transform: translateY(-2px);
+  transform: translateY(-4px) perspective(1000px) rotateX(2deg);
 }
 
 /* Neon text */

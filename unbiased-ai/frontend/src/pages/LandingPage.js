@@ -141,12 +141,12 @@ export default function LandingPage() {
   }, []);
 
   const FEATURES = [
-    { icon: '◈', title: 'Multi-Bias Detection', desc: 'Gender, racial, political, age, and cultural bias — all detected in real time with Gemini 1.5 Pro', color: 'var(--cyan)' },
-    { icon: '⟺', title: 'Side-by-Side Compare', desc: 'Compare two documents and visualize bias differentials with holographic overlays', color: 'var(--blue)' },
-    { icon: '✦', title: 'Neural Rewrite Engine', desc: 'Get unbiased rewrites that preserve meaning while eliminating prejudice', color: 'var(--purple)' },
-    { icon: '◎', title: 'AI Fairness Chat', desc: 'Ask anything about bias, fairness, and inclusion — powered by Gemini', color: 'var(--magenta)' },
-    { icon: '≡', title: 'Analysis History', desc: 'Full audit trail of every analysis with trends and bias evolution graphs', color: 'var(--gold)' },
-    { icon: '⬡', title: 'Confidence Scoring', desc: 'Probabilistic bias confidence scores with explanation of each finding', color: 'var(--green)' },
+    { icon: '◈', title: 'Neural Arbiter', desc: 'Surgical-grade detection of gender, racial, and systemic bias using sovereign intelligence layers.', color: 'var(--cyan)' },
+    { icon: '🌐', title: 'Sentinel Web Scan', desc: 'Scan and audit live web infrastructure in real-time to detect editorial slant and information manipulation.', color: 'var(--blue)' },
+    { icon: '✦', title: 'Sovereign Refraction', desc: 'Mathematically neutral rewrites that preserve factual density while eliminating psychological framing.', color: 'var(--purple)' },
+    { icon: '◎', title: 'Prophetic Forecasting', desc: 'Predict how specific bias vectors will escalate or manipulate sentiment over future discourse cycles.', color: 'var(--magenta)' },
+    { icon: '≡', title: 'Audit Immutable Log', desc: 'Full cryptographic audit trail of every analysis with bias evolution and trend forecasting.', color: 'var(--gold)' },
+    { icon: '⬡', title: 'Confidence Gradient', desc: 'Probabilistic analysis confidence with profound logical breakdowns of every finding.', color: 'var(--green)' },
   ];
 
   return (
@@ -169,7 +169,7 @@ export default function LandingPage() {
             color: 'var(--cyan)', letterSpacing: 2,
           }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 8px var(--green)', display: 'inline-block', animation: 'pulse-cyan 2s infinite' }} />
-            GOOGLE HACKATHON 2024 · POWERED BY GEMINI 1.5 PRO
+            SOVEREIGN INTELLIGENCE · POWERED BY GEMINI 1.5 PRO
           </div>
 
           <h1 style={{
@@ -179,7 +179,7 @@ export default function LandingPage() {
           }}>
             <span className="holo-text">UNBIASED</span>
             <br />
-            <span style={{ color: 'var(--text-primary)' }}>AI ANALYSIS</span>
+            <span style={{ color: 'var(--text-primary)' }}>NEURAL SOVEREIGN</span>
           </h1>
 
           <div style={{
@@ -194,62 +194,101 @@ export default function LandingPage() {
             color: 'var(--text-secondary)', lineHeight: 1.8,
             marginBottom: 40, maxWidth: 520,
           }}>
-            The next-generation platform that detects, analyzes, and eliminates bias in text
-            using Google's Gemini 1.5 Pro. Real-time neural scanning. Holographic visualizations.
-            Built for a fairer future.
-          </p>
-
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            The definitive platform for auditing, forecasting, and refracting bias in human communication. 
+            Harnessing the Sentinel layer of Gemini 1.5 Pro to protect objectivity in a polarized world.
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 24 }}>
             <button className="btn-primary" onClick={() => navigate('/auth')} style={{ fontSize: 15, padding: '16px 36px' }}>
-              LAUNCH SYSTEM
+              INITIALIZE SYSTEM
             </button>
             <button className="btn-secondary" onClick={() => document.getElementById('features').scrollIntoView({ behavior: 'smooth' })} style={{ fontSize: 15, padding: '16px 36px' }}>
-              EXPLORE
+              INSPECT MODULES
             </button>
           </div>
 
-          {/* Stats row */}
-          <div style={{ display: 'flex', gap: 40, marginTop: 56, paddingTop: 40, borderTop: '1px solid rgba(0,245,255,0.1)' }}>
-            {[['10+', 'BIAS TYPES'], ['99.2%', 'ACCURACY'], ['<2s', 'ANALYSIS']].map(([v, l]) => (
-              <div key={l}>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 28, color: 'var(--cyan)', textShadow: '0 0 20px rgba(0,245,255,0.5)' }}>{v}</div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', letterSpacing: 2 }}>{l}</div>
-              </div>
-            ))}
+          <div style={{
+            marginTop: 48, display: 'flex', alignItems: 'center', gap: 24,
+            fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)',
+            letterSpacing: 1,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ color: 'var(--cyan)' }}>✦</span>
+              ARCHITECT: KRISH JOSHI
+            </div>
+            <div style={{ width: 1, height: 12, background: 'rgba(255,255,255,0.1)' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ color: 'var(--purple)' }}>◈</span>
+              PARTNERS: GEMINI / ANTIGRAVITY
+            </div>
           </div>
         </div>
 
-        {/* Globe */}
+        {/* Hero Visual */}
         <div style={{
-          flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center',
-          animation: 'float 6s ease-in-out infinite',
-          filter: 'drop-shadow(0 0 40px rgba(0,245,255,0.2))',
+          flex: 1, height: 600, position: 'relative',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          perspective: 1000,
         }}>
-          <canvas ref={globeRef} style={{ maxWidth: '100%' }} />
+          {/* Animated rings */}
+          {[0, 1, 2].map((i) => (
+            <div key={i} style={{
+              position: 'absolute',
+              width: 300 + (i * 120),
+              height: 300 + (i * 120),
+              border: `1px solid rgba(0, 245, 255, ${0.3 - (i * 0.1)})`,
+              borderRadius: '50%',
+              animation: `rotate-pulse ${10 + (i * 5)}s linear infinite ${i * 2}s`,
+              boxShadow: i === 0 ? 'inset 0 0 50px rgba(0,245,255,0.1)' : 'none',
+            }} />
+          ))}
+          <div className="holo-card" style={{
+            width: 240, height: 320, borderRadius: 20,
+            background: 'linear-gradient(135deg, rgba(0,245,255,0.1), rgba(0,128,255,0.05))',
+            border: '1px solid rgba(0,245,255,0.3)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            gap: 20, backdropFilter: 'blur(20px)',
+            animation: 'floating 6s ease-in-out infinite',
+          }}>
+            <div style={{ fontSize: 64, filter: 'drop-shadow(0 0 20px var(--cyan))' }}>⬡</div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)', letterSpacing: 4 }}>CORE</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700 }}>SOVEREIGN</div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Features */}
-      <section id="features" style={{ padding: '80px 40px', maxWidth: 1400, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: 64 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--cyan)', letterSpacing: 4, marginBottom: 16 }}>CAPABILITIES</div>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 48, color: 'var(--text-primary)' }}>
-            NEURAL FEATURES
+      <section id="features" style={{ padding: '120px 40px', maxWidth: 1400, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 80 }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 48, fontWeight: 700, marginBottom: 16 }}>
+            NEURAL <span className="text-neon-cyan">LEVEL</span> CAPABILITIES
           </h2>
+          <p style={{ color: 'var(--text-secondary)', maxWidth: 600, margin: '0 auto', fontSize: 16 }}>
+            Unbiased AI is built on a custom sovereign intelligence layer, utilizing advanced
+            probabilistic modeling and prophetic vectoring to audit the truth.
+          </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: 24,
+        }}>
           {FEATURES.map((f, i) => (
-            <div key={f.title} className="glass-card" style={{ padding: 32, animationDelay: `${i * 0.1}s` }}>
+            <div key={i} className="glass-card" style={{ padding: 40, position: 'relative', overflow: 'hidden' }}>
               <div style={{
-                width: 56, height: 56, borderRadius: 16,
-                background: `${f.color}15`, border: `1px solid ${f.color}30`,
+                position: 'absolute', top: -20, right: -20,
+                fontSize: 120, opacity: 0.03, color: f.color, pointerEvents: 'none'
+              }}>{f.icon}</div>
+              <div style={{
+                width: 48, height: 48, borderRadius: 12,
+                background: `${f.color}15`, border: `1px solid ${f.color}40`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 24, marginBottom: 20, color: f.color,
+                fontSize: 24, color: f.color, marginBottom: 24,
                 boxShadow: `0 0 20px ${f.color}20`,
               }}>{f.icon}</div>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, color: 'var(--text-primary)', marginBottom: 12 }}>{f.title}</h3>
-              <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.7 }}>{f.desc}</p>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, marginBottom: 16 }}>{f.title}</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, fontSize: 14 }}>{f.desc}</p>
             </div>
           ))}
         </div>
@@ -257,15 +296,35 @@ export default function LandingPage() {
 
       {/* CTA */}
       <section style={{ padding: '80px 40px', textAlign: 'center' }}>
-        <div className="glass-card" style={{ maxWidth: 700, margin: '0 auto', padding: '60px 40px' }}>
+        <div className="glass-card" style={{ maxWidth: 800, margin: '0 auto', padding: '60px 40px' }}>
           <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 40, marginBottom: 20 }}>
             <span className="holo-text">READY TO ELIMINATE BIAS?</span>
           </h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: 36, fontSize: 16 }}>
-            Join the movement towards fair, unbiased communication.
+            Join the movement towards fair, unbiased communication. Access the sovereign intelligence layer today.
           </p>
           <button className="btn-primary" onClick={() => navigate('/auth')} style={{ fontSize: 16, padding: '18px 48px' }}>
-            ACCESS THE SYSTEM
+            INITIALIZE NEURAL LINK
+          </button>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer style={{ padding: '80px 40px', borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
+        <div style={{ fontSize: 32, marginBottom: 24 }}>⬡</div>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, marginBottom: 8 }}>
+          UNBIASED <span className="text-neon-cyan">SOVEREIGN</span>
+        </div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)', letterSpacing: 2, marginBottom: 32 }}>
+          Architected by KRISH JOSHI | Partners: GEMINI & ANTIGRAVITY
+        </div>
+        <div style={{ color: 'var(--text-muted)', fontSize: 11, letterSpacing: 1 }}>
+          © 2024 NEURAL SOVEREIGN INFRASTRUCTURE. ALL RIGHTS RESERVED.
+        </div>
+      </footer>
+    </div>
+  );
+}
           </button>
         </div>
       </section>

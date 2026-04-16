@@ -1,29 +1,29 @@
-# ⬡ UNBIASED AI — Neural Bias Analysis System
-### Google Developer Hackathon 2024 Showcase
+# ⬡ UNBIASED AI — Sovereign Neural Governance Engine
+### Architect: [Krish Joshi](https://github.com/KR-007J) | Lead Partner: Gemini & Antigravity
 
-[![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=white)](https://unbiased-ai-krish-6789.web.app)
-[![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://fslkykyavvtoxnnwubdp.supabase.co)
-[![Gemini](https://img.shields.io/badge/Gemini_1.5_Pro-blue?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev)
+[![Deployment](https://img.shields.io/badge/Status-GOD_LEVEL-cyan?style=for-the-badge)](https://unbiased-ai-krish-6789.web.app)
+[![Engine](https://img.shields.io/badge/Neural_Engine-Gemini_1.5_Pro-blue?style=for-the-badge)](https://ai.google.dev)
+[![License](https://img.shields.io/badge/License-Apache_2.0-purple?style=for-the-badge)](LICENSE)
 
-A next-generation, enterprise-grade bias detection and analysis platform powered by **Gemini 1.5 Pro**. Built with a living, breathing **3D Futuristic UI**, this system detects, visualizes, and helps eliminate bias in text with real-time neural scanning.
-
----
-
-## 🌟 Vision
-In an era of rapid information sharing, hidden biases can distort truth and perpetuate inequality. **Unbiased AI** serves as a neural lens, allowing researchers, editors, and students to identify prejudices across 10+ categories and transform them into neutral, evidence-based communication.
+**Unbiased AI** is no longer just a tool; it is a **Sovereign Operating System for Information Governance**. Engineered for the Google Developer Hackathon 2024, this platform leverages the extreme multimodal power of Gemini 1.5 Pro to detect, forecast, and neutralize human bias across the digital landscape.
 
 ---
 
-## 🚀 Key Features
+## 🏛️ Sovereign Vision
+In an era of algorithmic manipulation and systemic polarization, **Unbiased AI** acts as the ultimate Neural Arbiter. It provides institutional-grade auditing, prophetic forecasting, and mathematical refraction to ensure that human communication remains objective, inclusive, and future-proof.
 
-| Feature | Description |
-|---|---|
-| 🔍 **Multi-Bias Detection** | Real-time scanning for Gender, Racial, Political, Age, Cultural, and Socioeconomic bias. |
-| 🎯 **Neural Rewrite Engine** | Generates unbiased versions of text while strictly preserving original intent and nuance. |
-| 📊 **Interactive Analytics** | Animated gauge meters and holographic charts showing bias intensity and confidence. |
-| ⟺ **Differential Comparison** | Side-by-side analysis of two documents with holographic bias overlays. |
-| ◎ **Fairness Chat** | Converational AI assistant specialized in inclusion and neutral communication. |
-| 💾 **Cloud-Native Audit Trail** | Full analysis history stored in Supabase with sub-2s latency. |
+---
+
+## 🚀 God Level Features
+
+| Vector | Capability |
+| :--- | :--- |
+| 🔮 **Prophetic Vectoring** | 30-day bias forecasting and predictive slant analytics. |
+| 🛡️ **Objective Refraction** | Mathematical neutralization of biased narratives in real-time. |
+| 📑 **Institutional Export** | High-fidelity PDF audit reports with cryptographic neural signatures. |
+| 🌐 **Sentinel Web Scan** | Multimodal URL auditing for live news and social infrastructure. |
+| 🧠 **Sovereign Arbiter** | Advanced chat interface specialized in neural ethics and information governance. |
+| 🧪 **Differential Audit** | Side-by-side holographic comparison of competing information streams. |
 
 ---
 
@@ -31,68 +31,52 @@ In an era of rapid information sharing, hidden biases can distort truth and perp
 
 ```mermaid
 graph TD
-    A[React 18 Frontend] --> B[Zustand State Management]
-    A --> C[Three.js / Framer Motion UI]
-    A --> D[Firebase Auth]
-    A --> E[Supabase Edge Functions]
-    E --> F[Gemini 1.5 Pro API]
-    E --> G[PostgreSQL Database]
-    D -.-> H[Secure User Portal]
+    A[Sovereign React UI] --> B[Zustand Neural Store]
+    A --> C[Three.js Holographic Engine]
+    A --> D[Firebase Multi-Auth]
+    A --> E[Supabase Sentinel Edge]
+    E --> F[Gemini 1.5 Pro Core]
+    E --> G[PostgreSQL Ledger]
+    D -.-> H[Secure Governance Portal]
 ```
 
-### Stack
-- **Core**: React 18, TypeScript, Vite
-- **3D/UI**: Three.js, React Three Fiber, Framer Motion
-- **Auth**: Firebase Authentication (Google OAuth)
-- **Backend**: Supabase Edge Functions (Deno)
-- **Intelligence**: Google Gemini 1.5 Pro
-- **Storage**: Supabase PostgreSQL
+### The God Stack
+- **Architecture**: Micro-Frontend + Sovereign Edge Functions
+- **Intelligence**: Google Gemini 1.5 Pro (Multimodal)
+- **Design**: Cyber-Noir Glassmorphism with Fragmented Neural Transitions
+- **Deployment**: Firebase Sovereign Hosting + Supabase Edge Grid
 
 ---
 
-## 🛠️ Installation & Setup
+## 🛠️ Deployment & Orchestration
 
-### Prerequisites
-- Node.js 18+
-- [Gemini API Key](https://aistudio.google.com/)
+### Environment Synthesis
+Ensure your `.env` contains the required Sovereign Keys:
+- `VITE_FIREBASE_API_KEY`
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `GEMINI_API_KEY` (Supabase Secret)
 
-### Local Start
+### Local Launch
 ```bash
-# Clone the repository
 git clone https://github.com/KR-007J/unbiased-ai.git
-
-# Navigate to frontend
 cd unbiased-ai/frontend
-
-# Install dependencies
 npm install
-
-# Connect Environment
-cp .env.example .env
-# Fill in your Firebase & Supabase keys
-
-# Launch System
-npm start
+npm run dev
 ```
 
 ---
 
-## 🎨 Creative Design System
-The UI implementation follows a **Cyber Noir** aesthetic:
-- **Typography**: Rajdhani (Display), Share Tech Mono (Code)
-- **Effects**: Glassmorphism, Particle Fields, Holographic Shaders
-- **Palette**: Void Black (#050505), Neural Cyan (#00f2ff), Bio-Purple (#bc00ff)
+## 🏆 Hackathon Objective
+This platform is the definitive submission for the **Google Developer Hackathon 2024**. It demonstrates how AI can move beyond simple generation into the realm of **Universal Governance and Objectivity**.
 
 ---
 
-## 🏆 Hackathon
-This project was developed for the **Google Developer Hackathon 2024**, demonstrating the practical application of Large Language Models for social equity and data integrity.
+## 📄 License & Credits
+- **License**: [Apache License 2.0](LICENSE)
+- **Lead Architect**: **Krish Joshi**
+- **Neural Partners**: **Gemini 1.5 Pro** & **Antigravity AI**
 
 ---
 
-## 📄 License
-This project is licensed under the **Apache License 2.0**. See the [LICENSE](LICENSE) file for details.
-
----
-
-Built with ❤️ for a fairer future.
+*“Neutrality is not a state of being; it is a vector of intelligence.”*

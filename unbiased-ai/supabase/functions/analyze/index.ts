@@ -12,16 +12,34 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const { text, userId } = await req.json()
+    const { text, url, userId } = await req.json()
+    let contentToAnalyze = text
 
-    const prompt = `You are an expert bias detection AI. Analyze the following text for ALL types of bias including gender, racial, political, age, cultural, religious, socioeconomic, and any other bias.
+    if (url) {
+      try {
+        const response = await fetch(url)
+        const html = await response.text()
+        // Simple extraction: remove scripts and styles
+        contentToAnalyze = html
+          .replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, '')
+          .replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gim, '')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 15000) // Limit for Gemini
+      } catch (e) {
+        throw new Error(`Failed to ingest URL: ${e.message}`)
+      }
+    }
+
+    const prompt = `You are the Sovereign Neural Arbiter of Objectivity. Analyze the following text with absolute surgical precision for ALL types of bias including gender, racial, political, age, cultural, religious, socioeconomic, and manipulative linguistic patterns.
 
 Text to analyze:
 """
-${text}
+${contentToAnalyze}
 """
 
-Respond ONLY with a valid JSON object (no markdown, no explanation) with this exact structure:
+Respond ONLY with a valid JSON object (no markdown, no preamble) with this exact structure:
 {
   "biasScore": <number 0-1, overall bias intensity>,
   "confidence": <number 0-1, model confidence>,
@@ -31,15 +49,16 @@ Respond ONLY with a valid JSON object (no markdown, no explanation) with this ex
   "findings": [
     {
       "type": "<bias type>",
-      "text": "<exact biased phrase from text>",
-      "start": <character index>,
-      "end": <character index>,
-      "explanation": "<why this is biased>",
+      "text": "<exact biased phrase>",
+      "explanation": "<profound logical breakdown>",
       "confidence": <0-1>
     }
   ],
   "summary": "<2-3 sentence overall analysis>",
-  "severity": "low|medium|high|none"
+  "severity": "low|medium|high|critical",
+  "propheticVector": "<A deep prediction of how this specific bias will likely manipulate public sentiment or escalate in future discourse over the next 30 days.>",
+  "objectiveRefraction": "<A perfectly neutral, surgically rewritten version of the input text that preserves 100% of facts but eliminates 100% of biased framing.>",
+  "neuralSignature": "<A unique 16-character hexadecimal string representing the neural audit proof for this specific content.>"
 }`
 
     const geminiRes = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {

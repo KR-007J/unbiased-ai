@@ -7,11 +7,12 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // API helpers
 export const api = {
-  async analyzeText(text, options = {}) {
+  async analyzeText(payload, options = {}) {
+    const body = typeof payload === 'string' ? { text: payload, ...options } : { ...payload, ...options };
     const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseAnonKey}` },
-      body: JSON.stringify({ text, ...options }),
+      body: JSON.stringify(body),
     });
     return res.json();
   },
@@ -61,11 +62,22 @@ export const api = {
   },
 
   async getChatResponse(messages, context = '') {
-    const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseAnonKey}` },
-      body: JSON.stringify({ messages, context }),
-    });
-    return res.json();
+    try {
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+        },
+        body: JSON.stringify({ messages, context }),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        return { response: `[INTEGRITY_ERROR]: System returned status ${res.status}. ${text.slice(0, 100)}` };
+      }
+      return await res.json();
+    } catch (err) {
+      return { response: `[NEURAL_DISCONNECTION]: ${err.message}` };
+    }
   },
 };

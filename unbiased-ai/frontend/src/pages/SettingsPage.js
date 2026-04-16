@@ -41,21 +41,21 @@ export default function SettingsPage() {
       ),
     },
     {
-      title: 'ABOUT', icon: '◈',
+      title: 'ABOUT UNBIASED AI', icon: '◈',
       content: (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {[
-            ['Project', 'Unbiased AI'],
-            ['Version', '2.0.0'],
-            ['Hackathon', 'Google Developer Hackathon 2024'],
-            ['AI Model', 'Gemini 1.5 Pro'],
-            ['Frontend', 'React + Firebase Hosting'],
-            ['Backend', 'Supabase Edge Functions'],
-            ['Database', 'Supabase PostgreSQL'],
+            ['ARCHITECT', 'KRISH JOSHI'],
+            ['PARTNERS', 'GEMINI & ANTIGRAVITY'],
+            ['MISSION', 'ESTABLISHING UNIVERSAL NEURAL NEUTRALITY'],
+            ['ARCHITECTURE', 'SOVEREIGN NEURAL ARBITER v3.0'],
+            ['CORE AI', 'GEMINI 1.5 PRO (GOD LEVEL)'],
+            ['INFRASTRUCTURE', 'SUPABASE X FIREBASE HYBRID'],
+            ['COMPLIANCE', 'INSTITUTIONAL GRADE'],
           ].map(([k, v]) => (
             <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)' }}>{k}</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--cyan)' }}>{v}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>{k}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: k === 'ARCHITECT' ? 'white' : 'var(--cyan)', fontWeight: k === 'ARCHITECT' ? 700 : 400 }}>{v}</span>
             </div>
           ))}
         </div>
