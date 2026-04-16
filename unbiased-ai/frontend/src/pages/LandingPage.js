@@ -196,7 +196,8 @@ export default function LandingPage() {
           }}>
             The definitive platform for auditing, forecasting, and refracting bias in human communication. 
             Harnessing the Sentinel layer of Gemini 1.5 Pro to protect objectivity in a polarized world.
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 24 }}>
+          </p>
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 24 }}>
             <button className="btn-primary" onClick={() => navigate('/auth')} style={{ fontSize: 15, padding: '16px 36px' }}>
               INITIALIZE SYSTEM
             </button>
