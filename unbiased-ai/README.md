@@ -5,7 +5,7 @@
 [![Engine](https://img.shields.io/badge/Neural_Engine-Gemini_1.5_Pro-blue?style=for-the-badge)](https://ai.google.dev)
 [![License](https://img.shields.io/badge/License-Apache_2.0-purple?style=for-the-badge)](LICENSE)
 
-**Unbiased AI** is no longer just a tool; it is a **Sovereign Operating System for Information Governance**. Engineered for the Google Developer Hackathon 2024, this platform leverages the extreme multimodal power of Gemini 1.5 Pro to detect, forecast, and neutralize human bias across the digital landscape.
+**Unbiased AI** is no longer just a tool; it is a **Sovereign Operating System for Information Governance**. Engineered for the Google Developer Hackathon 2026, this platform leverages the extreme multimodal power of Gemini 1.5 Pro to detect, forecast, and neutralize human bias across the digital landscape.
 
 ---
 
@@ -68,7 +68,7 @@ npm run dev
 ---
 
 ## 🏆 Hackathon Objective
-This platform is the definitive submission for the **Google Developer Hackathon 2024**. It demonstrates how AI can move beyond simple generation into the realm of **Universal Governance and Objectivity**.
+This platform is the definitive submission for the **Google Developer Hackathon 2026**. It demonstrates how AI can move beyond simple generation into the realm of **Universal Governance and Objectivity**.
 
 ---
 

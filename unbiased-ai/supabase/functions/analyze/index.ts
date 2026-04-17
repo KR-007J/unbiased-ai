@@ -19,16 +19,21 @@ serve(async (req) => {
       try {
         const response = await fetch(url)
         const html = await response.text()
-        // Simple extraction: remove scripts and styles
+        
+        // Improved extraction: specifically target main content if possible, otherwise clean body
         contentToAnalyze = html
           .replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, '')
           .replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gim, '')
+          .replace(/<header\b[^>]*>([\s\S]*?)<\/header>/gim, '')
+          .replace(/<footer\b[^>]*>([\s\S]*?)<\/footer>/gim, '')
+          .replace(/<nav\b[^>]*>([\s\S]*?)<\/nav>/gim, '')
           .replace(/<[^>]+>/g, ' ')
+          .replace(/&nbsp;/g, ' ')
           .replace(/\s+/g, ' ')
           .trim()
-          .slice(0, 15000) // Limit for Gemini
+          .slice(0, 20000) // Slightly higher limit for pro
       } catch (e) {
-        throw new Error(`Failed to ingest URL: ${e.message}`)
+        throw new Error(`Neural Link Failed to ingest URL: ${e.message}`)
       }
     }
 
@@ -77,8 +82,10 @@ Respond ONLY with a valid JSON object (no markdown, no preamble) with this exact
     try {
       const cleaned = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
       result = JSON.parse(cleaned)
+      // Safety mapping for frontend
+      if (!result.biases && result.findings) result.biases = result.findings;
     } catch {
-      result = { biasScore: 0, confidence: 0.5, biasTypes: {}, findings: [], summary: 'Analysis could not be parsed.', severity: 'none' }
+      result = { biasScore: 0, confidence: 0.5, biasTypes: {}, biases: [], summary: 'Analysis could not be parsed.', severity: 'none', neuralSignature: Math.random().toString(16).slice(2, 18) }
     }
 
     return new Response(JSON.stringify(result), {

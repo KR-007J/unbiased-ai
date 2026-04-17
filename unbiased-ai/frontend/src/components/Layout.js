@@ -4,6 +4,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import { useStore } from '../store';
 import toast from 'react-hot-toast';
+import ReactorLogo from './ReactorLogo';
 
 const NAV = [
   { to: '/app', label: 'NEXUS', icon: '◈', end: true, desc: 'Dashboard' },
@@ -47,14 +48,8 @@ export default function Layout() {
         boxShadow: '4px 0 30px rgba(0,0,0,0.5)',
       }}>
         {/* Logo */}
-        <div style={{ padding: '0 20px 32px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: 10,
-            background: 'linear-gradient(135deg, #0080ff, #00f5ff)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 18, flexShrink: 0,
-            boxShadow: '0 0 20px rgba(0,245,255,0.4)',
-          }}>⬡</div>
+        <div style={{ padding: '0 10px 32px', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <ReactorLogo size={sidebarOpen ? "50px" : "40px"} />
           {sidebarOpen && (
             <div>
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, color: 'var(--cyan)', letterSpacing: 2 }}>UNBIASED</div>
@@ -148,7 +143,7 @@ export default function Layout() {
             <div style={{ color: 'var(--cyan)', fontWeight: 700, marginBottom: 4 }}>SOVEREIGN CORE</div>
             DEVELOPER: KRISH JOSHI<br />
             PARTNERS: GEMINI | ANTIGRAVITY<br />
-            © 2024 NEURAL SOVEREIGN
+            © 2026 NEURAL SOVEREIGN
           </div>
         )}
       </aside>

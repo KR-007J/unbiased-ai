@@ -1,7 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent'
+const GEMINI_API_VERSION = 'v1'
+const GEMINI_MODEL = 'gemini-1.5-pro'
+const GEMINI_URL = `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${GEMINI_MODEL}:generateContent`
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -42,18 +44,31 @@ serve(async (req) => {
       })
     }
 
-    const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+    const requestBody = {
+      contents,
+      generationConfig: { temperature: 0.8, maxOutputTokens: 2000, topP: 0.95 }
+    }
+
+    let res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents,
-        generationConfig: { temperature: 0.8, maxOutputTokens: 2000, topP: 0.95 }
-      })
+      body: JSON.stringify(requestBody)
     })
+
+    // Failover to Gemini 1.5 Flash if Pro fails
+    if (!res.ok) {
+      console.warn('Pro model failed, attempting failover to Flash...')
+      const FLASH_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent`
+      res = await fetch(`${FLASH_URL}?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      })
+    }
 
     if (!res.ok) {
       const errorData = await res.json()
-      console.error('Gemini API Error:', errorData)
+      console.error('Gemini API Error (Final):', errorData)
       throw new Error(`Neural link failed: ${errorData.error?.message || 'Unknown provider error'}`)
     }
 

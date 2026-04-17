@@ -320,15 +320,9 @@ export default function LandingPage() {
           Architected by KRISH JOSHI | Partners: GEMINI & ANTIGRAVITY
         </div>
         <div style={{ color: 'var(--text-muted)', fontSize: 11, letterSpacing: 1 }}>
-          © 2024 NEURAL SOVEREIGN INFRASTRUCTURE. ALL RIGHTS RESERVED.
+          © 2026 NEURAL SOVEREIGN INFRASTRUCTURE. ALL RIGHTS RESERVED.
         </div>
       </footer>
-    </div>
-  );
-}
-          </button>
-        </div>
-      </section>
     </div>
   );
 }
