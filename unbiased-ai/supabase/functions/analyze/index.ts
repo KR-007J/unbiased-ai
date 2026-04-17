@@ -33,7 +33,7 @@ serve(async (req) => {
           .trim()
           .slice(0, 20000) // Slightly higher limit for pro
       } catch (e) {
-        throw new Error(`Neural Link Failed to ingest URL: ${e.message}`)
+        throw new Error('Neural Link Failed to ingest URL: ' + e.message)
       }
     }
 
@@ -66,7 +66,7 @@ Respond ONLY with a valid JSON object (no markdown, no preamble) with this exact
   "neuralSignature": "<A unique 16-character hexadecimal string representing the neural audit proof for this specific content.>"
 }`
 
-    const geminiRes = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+    const geminiRes = await fetch(GEMINI_URL + '?key=' + GEMINI_API_KEY, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -75,6 +75,12 @@ Respond ONLY with a valid JSON object (no markdown, no preamble) with this exact
       })
     })
 
+    if (!geminiRes.ok) {
+      const errorBody = await geminiRes.text()
+      console.error('Gemini API Error:', errorBody)
+      throw new Error('Neural Link Error: ' + geminiRes.status)
+    }
+
     const geminiData = await geminiRes.json()
     const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '{}'
     
@@ -82,10 +88,21 @@ Respond ONLY with a valid JSON object (no markdown, no preamble) with this exact
     try {
       const cleaned = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
       result = JSON.parse(cleaned)
-      // Safety mapping for frontend
-      if (!result.biases && result.findings) result.biases = result.findings;
-    } catch {
-      result = { biasScore: 0, confidence: 0.5, biasTypes: {}, biases: [], summary: 'Analysis could not be parsed.', severity: 'none', neuralSignature: Math.random().toString(16).slice(2, 18) }
+      // Standardize findings/biases for frontend consumption
+      if (!result.biases && result.findings) result.biases = result.findings
+      if (!result.findings && result.biases) result.findings = result.biases
+    } catch (e) {
+      console.error('JSON Parse Error:', e, rawText)
+      result = { 
+        biasScore: 0, 
+        confidence: 0, 
+        biasTypes: {}, 
+        biases: [], 
+        findings: [], 
+        summary: 'Sovereign Neural layer encountered a parsing dissonance.', 
+        severity: 'critical', 
+        neuralSignature: 'ERR_' + Math.random().toString(16).slice(2, 10).toUpperCase() 
+      }
     }
 
     return new Response(JSON.stringify(result), {

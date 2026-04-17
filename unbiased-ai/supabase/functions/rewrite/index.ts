@@ -31,11 +31,17 @@ Respond ONLY with JSON:
   "biasRemoved": ["<list of specific bias instances removed>"]
 }`
 
-    const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+    const res = await fetch(GEMINI_URL + '?key=' + GEMINI_API_KEY, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 2048 } })
     })
+
+    if (!res.ok) {
+      const errorText = await res.text()
+      console.error('Gemini API Error:', errorText)
+      throw new Error('Supabase Edge Error: ' + res.status)
+    }
 
     const data = await res.json()
     const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}'
@@ -43,7 +49,10 @@ Respond ONLY with JSON:
 
     let result
     try { result = JSON.parse(cleaned) }
-    catch { result = { rewritten: text, explanation: 'Could not generate rewrite.', changesCount: 0, biasRemoved: [] } }
+    catch (e) {
+      console.error('Rewrite Parse Error:', e)
+      result = { rewritten: text, explanation: 'Refraction failed due to neural Dissonance.', changesCount: 0, biasRemoved: [] } 
+    }
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

@@ -44,11 +44,17 @@ Respond ONLY with JSON:
   "recommendationB": "<specific suggestion to improve Text B>"
 }`
 
-    const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+    const res = await fetch(GEMINI_URL + '?key=' + GEMINI_API_KEY, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.1, maxOutputTokens: 1500 } })
     })
+
+    if (!res.ok) {
+      const errorText = await res.text()
+      console.error('Gemini API Error:', errorText)
+      throw new Error('Supabase Edge Error: ' + res.status)
+    }
 
     const data = await res.json()
     const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}'
@@ -56,7 +62,10 @@ Respond ONLY with JSON:
 
     let result
     try { result = JSON.parse(cleaned) }
-    catch { result = { scoreA: 0, scoreB: 0, winner: 'tie', analysis: 'Comparison failed.' } }
+    catch (e) { 
+      console.error('Comparison Parse Error:', e)
+      result = { scoreA: 0, scoreB: 0, winner: 'tie', analysis: 'Neural convergence failed.' } 
+    }
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
