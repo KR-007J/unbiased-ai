@@ -4,8 +4,17 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 // @ts-ignore - Deno global API
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 const GEMINI_API_VERSION = 'v1'
-const GEMINI_MODEL = 'gemini-1.5-pro'
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/' + GEMINI_API_VERSION + '/models/' + GEMINI_MODEL + ':generateContent'
+
+// Model fallback chain - try each in order
+const MODELS = [
+  'gemini-1.5-pro-001',  // Latest 1.5 Pro
+  'gemini-1.5-pro',      // Fallback to base 1.5 Pro
+  'gemini-1.0-pro',      // Stable fallback
+]
+
+const buildModelUrl = (model: string): string => {
+  return `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${model}:generateContent`
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -51,27 +60,37 @@ serve(async (req: Request) => {
       generationConfig: { temperature: 0.8, maxOutputTokens: 2000, topP: 0.95 }
     }
 
-    let res = await fetch(GEMINI_URL + '?key=' + GEMINI_API_KEY, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
-    })
+    let res: Response | null = null
+    let lastError: string = ''
 
-    // Failover to Gemini 1.5 Flash if Pro fails
-    if (!res.ok) {
-      console.warn('Pro model failed, attempting failover to Flash...')
-      const FLASH_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent`
-      res = await fetch(FLASH_URL + '?key=' + GEMINI_API_KEY, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      })
+    // Try each model in fallback chain
+    for (const model of MODELS) {
+      try {
+        const url = buildModelUrl(model) + '?key=' + GEMINI_API_KEY
+        console.log(`Attempting with model: ${model}`)
+        res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        })
+
+        if (res.ok) {
+          console.log(`Success with model: ${model}`)
+          break
+        } else {
+          const errorData = await res.json()
+          lastError = errorData.error?.message || 'Unknown error'
+          console.warn(`Model ${model} failed: ${lastError}`)
+        }
+      } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : String(err)
+        console.warn(`Model ${model} error: ${errMsg}`)
+        lastError = errMsg
+      }
     }
 
-    if (!res.ok) {
-      const errorData = await res.json()
-      console.error('Gemini API Error (Final):', errorData)
-      throw new Error(`Neural link failed: ${errorData.error?.message || 'Unknown provider error'}`)
+    if (!res?.ok) {
+      throw new Error(`Neural link failed: ${lastError || 'All models exhausted'}`)
     }
 
     const data = await res.json()
