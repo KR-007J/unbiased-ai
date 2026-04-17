@@ -45,7 +45,7 @@ export default function BiasMeter({ score = 0, label = '', size = 180 }) {
       }
 
       // Value arc
-      const [c1, c2] = getColor(val);
+      const [c1] = getColor(val);
       const startAngle = -Math.PI * 0.8;
       const endAngle = startAngle + val * Math.PI * 1.6;
       

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
 
 :root {
   --bg-void: #010208;
@@ -32,9 +32,9 @@
   --text-muted: rgba(100, 140, 180, 0.5);
   --text-accent: var(--cyan);
   
-  --font-display: 'Rajdhani', sans-serif;
-  --font-body: 'Exo 2', sans-serif;
-  --font-mono: 'Share Tech Mono', monospace;
+  --font-display: 'Inter', 'Rajdhani', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: 'Exo 2', 'Inter', -apple-system, sans-serif;
+  --font-mono: 'Share Tech Mono', 'Courier New', monospace;
   
   --radius-sm: 6px;
   --radius-md: 12px;

@@ -88,7 +88,7 @@ export default function AuthPage() {
         <div style={{ display: 'flex', marginBottom: 32, background: 'rgba(0,0,0,0.3)', borderRadius: 10, padding: 4 }}>
           {['login', 'signup'].map((m) => (
             <button key={m} onClick={() => setMode(m)} style={{
-              flex: 1, padding: '10px', border: 'none', borderRadius: 8, cursor: 'pointer',
+              flex: 1, padding: '10px', borderRadius: 8, cursor: 'pointer',
               fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 13, letterSpacing: 2,
               textTransform: 'uppercase',
               background: mode === m ? 'linear-gradient(135deg, rgba(0,128,255,0.4), rgba(0,245,255,0.2))' : 'transparent',

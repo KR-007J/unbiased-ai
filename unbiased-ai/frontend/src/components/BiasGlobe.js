@@ -1,6 +1,6 @@
 import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Sphere, MeshDistortMaterial, Float, Text } from '@react-three/drei';
+import { OrbitControls, Sphere, Float, Text } from '@react-three/drei';
 import * as THREE from 'three';
 
 function GlobeContent() {

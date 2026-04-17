@@ -19,6 +19,13 @@ export default function VisionPage() {
     setResult(null);
     try {
       const data = await api.analyzeText({ url }, { userId: user?.uid });
+      
+      if (data && data.error) {
+        toast.error(data.error.includes('[SYSTEM_ERROR]') ? data.error : 'Neural link rejected: ' + data.error);
+        setLoading(false);
+        return;
+      }
+
       setResult(data);
       useStore.getState().setCurrentAnalysis(data);
       toast.success('Web audit complete');

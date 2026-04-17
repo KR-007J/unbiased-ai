@@ -12,6 +12,11 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
+    if (!GEMINI_API_KEY) {
+      return new Response(JSON.stringify({ error: '[SYSTEM_ERROR]: GEMINI_API_KEY is missing. Neural audit proofing unavailable.' }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
     const { text, url, userId } = await req.json()
     let contentToAnalyze = text
 
@@ -109,8 +114,9 @@ Respond ONLY with a valid JSON object (no markdown, no preamble) with this exact
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    console.error('Analyze Error:', err)
+    return new Response(JSON.stringify({ error: '[SYSTEM_ERROR]: ' + err.message }), {
+      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }
 })

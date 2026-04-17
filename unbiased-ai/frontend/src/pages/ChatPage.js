@@ -38,16 +38,22 @@ export default function ChatPage() {
     setLoading(true);
 
     try {
-      // Use the current analysis from the store as context for the chat
       const currentAnalysis = useStore.getState().currentAnalysis;
-      
-      // Skip the first message (system greeting) to ensure alternating roles for Gemini
       const conversationHistory = messages.slice(1).map((m) => ({ role: m.role, content: m.content }));
       const data = await api.getChatResponse([...conversationHistory, { role: 'user', content: msg }], currentAnalysis);
-      setMessages((m) => [...m, { role: 'assistant', content: data.response || data.content, timestamp: new Date() }]);
-    } catch {
+      
+      if (data && data.response) {
+        setMessages((m) => [...m, { role: 'assistant', content: data.response, timestamp: new Date() }]);
+      } else if (data && data.content) {
+        setMessages((m) => [...m, { role: 'assistant', content: data.content, timestamp: new Date() }]);
+      } else {
+        throw new Error('Neural response is empty');
+      }
+    } catch (error) {
+      console.error('Chat Error:', error);
       toast.error('Neural link interrupted');
-      setMessages((m) => [...m, { role: 'assistant', content: 'Connection error. Please try again.', timestamp: new Date(), error: true }]);
+      const errorMsg = error.message?.includes('[SYSTEM_ERROR]') ? error.message : 'The Sentinel layer encountered a synchronization anomaly. Please retry.';
+      setMessages((m) => [...m, { role: 'assistant', content: errorMsg, timestamp: new Date(), error: true }]);
     } finally {
       setLoading(false);
     }

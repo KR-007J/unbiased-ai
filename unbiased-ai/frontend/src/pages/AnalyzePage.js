@@ -25,12 +25,38 @@ export default function AnalyzePage() {
     setResult(null);
     try {
       const data = await api.analyzeText(text, { userId: user?.uid });
-      setResult(data);
-      useStore.getState().setCurrentAnalysis(data);
-      if (user) await api.saveAnalysis({ user_id: user.uid, original_text: text, bias_score: data.biasScore, bias_types: data.biasTypes, created_at: new Date().toISOString() });
-      toast.success('Analysis complete');
+      
+      if (data && data.error) {
+        toast.error(data.error.includes('[SYSTEM_ERROR]') ? data.error : 'Neural link rejected: ' + data.error);
+        setLoading(false);
+        return;
+      }
+
+      if (data && data.biases) {
+        setResult(data);
+        useStore.getState().setCurrentAnalysis(data);
+        if (user) {
+          try {
+            await api.saveAnalysis({ 
+              user_id: user.uid, 
+              original_text: text, 
+              bias_score: data.biasScore || 0, 
+              bias_types: data.biasTypes || {}, 
+              findings: data.biases || [],
+              summary: data.summary || '',
+              neural_signature: data.neuralSignature || '',
+              created_at: new Date().toISOString() 
+            });
+          } catch (dbErr) {
+            console.error('Database Sync Failed:', dbErr);
+          }
+        }
+        toast.success('Analysis complete');
+      } else {
+        throw new Error(data?.error || 'Neural computation returned malformed data');
+      }
     } catch (err) {
-      toast.error('Analysis failed — check API connection');
+      toast.error(`Analysis failed: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -312,7 +338,7 @@ export default function AnalyzePage() {
               {activeTab === 'highlighted' ? (
                 <div style={{ marginBottom: 32 }}>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', marginBottom: 16 }}>ANALYZED DATA STREAM</div>
-                  {renderHighlighted(text, result.biases)}
+                  {renderHighlighted(text, result.biases || [])}
                   
                   <div className="cyber-divider" />
                   
@@ -335,7 +361,7 @@ export default function AnalyzePage() {
 
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', marginBottom: 16 }}>DETAILED FINDINGS</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                {result.biases.map((b, i) => (
+                {(result.biases || []).map((b, i) => (
                   <div key={i} style={{ padding: 20, borderRadius: 12, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--cyan)' }}>[{b.type.toUpperCase()}]</span>

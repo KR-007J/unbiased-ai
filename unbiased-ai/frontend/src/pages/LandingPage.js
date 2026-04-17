@@ -72,7 +72,6 @@ export default function LandingPage() {
           const t = (lat / 100) * Math.PI;
           const x = cx + R * Math.sin(t) * Math.cos(angle);
           const y = cy + R * Math.cos(t) * -1;
-          const depth = Math.sin(t) * Math.cos(angle);
           if (lat === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         }

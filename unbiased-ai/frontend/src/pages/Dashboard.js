@@ -1,18 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useStore } from '../store';
-import { api } from '../supabase';
 import StatCard from '../components/StatCard';
 import BiasMeter from '../components/BiasMeter';
-import TruthPulse from '../components/TruthPulse';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { BIAS_CATEGORIES } from '../constants';
 import BiasGlobe from '../components/BiasGlobe';
 
 export default function Dashboard() {
-  const user = useStore((s) => s.user);
   const navigate = useNavigate();
-  const [stats, setStats] = useState({ totalAnalyses: 1248, totalUsers: 582, globalBiasIndex: 0.62 });
+  const stats = { totalAnalyses: 1248, totalUsers: 582, globalBiasIndex: 0.62 };
   const [recentAnalyses, setRecentAnalyses] = useState([]);
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -29,7 +29,6 @@ function PrivateRoute({ children }) {
 
 export default function App() {
   const setUser = useStore((s) => s.setUser);
-  const canvasRef = useRef(null);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useStore } from '../store';
 import { supabase } from '../supabase';
 import BiasMeter from '../components/BiasMeter';
@@ -11,12 +11,8 @@ export default function HistoryPage() {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
 
-  useEffect(() => {
+  const loadHistory = useCallback(async () => {
     if (!user) return;
-    loadHistory();
-  }, [user]);
-
-  const loadHistory = async () => {
     setLoading(true);
     try {
       const { data } = await supabase
@@ -27,7 +23,11 @@ export default function HistoryPage() {
       if (data) setAnalyses(data);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
 
   const filtered = analyses.filter((a) => {
     const matchFilter =

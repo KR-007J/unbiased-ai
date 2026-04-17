@@ -3,7 +3,7 @@ import { api } from '../supabase';
 import BiasMeter from '../components/BiasMeter';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BIAS_CATEGORIES, BIAS_COLORS } from '../constants';
+import { BIAS_CATEGORIES } from '../constants';
 
 export default function ComparePage() {
   const [textA, setTextA] = useState('');
@@ -16,9 +16,16 @@ export default function ComparePage() {
     setLoading(true);
     try {
       const data = await api.compareTexts(textA, textB);
-      setResult(data);
-      toast.success('Comparison complete');
-    } catch { toast.error('Comparison failed'); }
+      if (data && !data.error) {
+        setResult(data);
+        toast.success('Comparison complete');
+      } else {
+        toast.error(data?.error || 'Neural refraction failed');
+      }
+    } catch (error) { 
+      console.error('Comparison Error:', error);
+      toast.error('Connection timeout in neural link'); 
+    }
     finally { setLoading(false); }
   };
 

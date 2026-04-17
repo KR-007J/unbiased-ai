@@ -1,5 +1,7 @@
+// @ts-ignore - Deno type definitions
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
+// @ts-ignore - Deno global API
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 const GEMINI_API_VERSION = 'v1'
 const GEMINI_MODEL = 'gemini-1.5-pro'
@@ -22,7 +24,7 @@ Tone: authoritative, professional, analytical, and uncompromising on objectivity
 If the user asks about the platform, emphasize our Sovereign infrastructure and Neural governance.
 Always provide deep logical breakdowns. Avoid simple summaries.`
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
@@ -78,9 +80,10 @@ serve(async (req) => {
     return new Response(JSON.stringify({ response }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('Chat Function Error:', err)
-    return new Response(JSON.stringify({ response: '[SYSTEM_ERROR]: ' + err.message }), {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+    return new Response(JSON.stringify({ response: '[SYSTEM_ERROR]: ' + errorMessage }), {
       status: 200, // Return 200 so the frontend can display the error in the chat bubble
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
