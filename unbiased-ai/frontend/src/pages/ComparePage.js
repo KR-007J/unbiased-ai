@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { api } from '../supabase';
 import BiasMeter from '../components/BiasMeter';
+import BiasComparisonMatrix from '../components/BiasComparisonMatrix';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BIAS_CATEGORIES } from '../constants';
@@ -152,6 +153,13 @@ export default function ComparePage() {
                     );
                   })}
                 </div>
+              </div>
+            )}
+
+            {/* Bias Comparison Matrix */}
+            {result.resultsA && result.resultsB && (
+              <div style={{ marginBottom: 32 }}>
+                <BiasComparisonMatrix resultA={result.resultsA} resultB={result.resultsB} />
               </div>
             )}
 

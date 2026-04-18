@@ -11,6 +11,12 @@ export const useStore = create(
       isAnalyzing: false,
       notifications: [],
       sidebarOpen: true,
+      
+      // Phase 2: Animation State
+      animationPhase: 'idle', // idle, analyzing, streaming, complete
+      auditStreamEvents: [], // Live global audit events
+      streamingMessage: '', // Real-time message content for SSE
+      isStreaming: false,
 
       setUser: (user) => set({ user }),
       setTheme: (theme) => set({ theme }),
@@ -21,6 +27,15 @@ export const useStore = create(
       addNotification: (n) => set((s) => ({ notifications: [...s.notifications, { ...n, id: Date.now() }] })),
       removeNotification: (id) => set((s) => ({ notifications: s.notifications.filter((n) => n.id !== id) })),
       toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
+      
+      // Phase 2 Animation Methods
+      setAnimationPhase: (phase) => set({ animationPhase: phase }),
+      setStreamingMessage: (msg) => set({ streamingMessage: msg }),
+      setIsStreaming: (v) => set({ isStreaming: v }),
+      addAuditEvent: (event) => set((s) => ({ 
+        auditStreamEvents: [event, ...s.auditStreamEvents].slice(0, 50) // Keep last 50
+      })),
+      clearAuditEvents: () => set({ auditStreamEvents: [] }),
     }),
     { name: 'unbiased-ai-store', partialize: (s) => ({ theme: s.theme }) }
   )

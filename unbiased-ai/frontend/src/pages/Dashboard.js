@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+
 import StatCard from '../components/StatCard';
 import BiasMeter from '../components/BiasMeter';
+import LiveAuditStream from '../components/LiveAuditStream';
 import { motion } from 'framer-motion';
 import { BIAS_CATEGORIES } from '../constants';
 import BiasGlobe from '../components/BiasGlobe';
 
 export default function Dashboard() {
-  const navigate = useNavigate();
   const stats = { totalAnalyses: 1248, totalUsers: 582, globalBiasIndex: 0.62 };
+  // eslint-disable-next-line
   const [recentAnalyses, setRecentAnalyses] = useState([]);
 
   useEffect(() => {
@@ -120,41 +121,8 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Neural Activity Feed */}
-          <div className="glass-card" style={{ padding: 32 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18 }}>NEURAL FEED</h3>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 10px var(--green)' }} className="ping" />
-            </div>
-            <div style={{ display: 'grid', gap: 16 }}>
-              {recentAnalyses.map(item => (
-                <motion.div 
-                  key={item.id}
-                  whileHover={{ x: 5 }}
-                  style={{ 
-                    padding: 16, borderRadius: 12, background: 'rgba(255,255,255,0.03)',
-                    borderLeft: `3px solid ${item.score > 0.7 ? '#ff3366' : 'var(--cyan)'}`
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>{item.type.toUpperCase()} SCAN</span>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, opacity: 0.5 }}>{item.time}</span>
-                  </div>
-                  <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>"{item.text.slice(0, 45)}..."</p>
-                  <div style={{ width: '100%', height: 2, background: 'rgba(255,255,255,0.05)', borderRadius: 2 }}>
-                    <div style={{ width: `${item.score * 100}%`, height: '100%', background: item.score > 0.7 ? '#ff3366' : 'var(--cyan)' }} />
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-            <button 
-              onClick={() => navigate('/analyze')}
-              className="btn-primary" 
-              style={{ width: '100%', marginTop: 24, padding: '12px', fontSize: 13, background: 'transparent', border: '1px solid var(--cyan)', color: 'var(--cyan)' }}
-            >
-              VIEW ALL LOGS
-            </button>
-          </div>
+          {/* Live Audit Stream Feed */}
+          <LiveAuditStream maxItems={6} autoGenerate={true} />
         </div>
       </div>
     </motion.div>

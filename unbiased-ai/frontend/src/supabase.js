@@ -80,4 +80,65 @@ export const api = {
       return { response: `[NEURAL_DISCONNECTION]: ${err.message}` };
     }
   },
+
+  async getChatResponseStreaming(messages, context = '', onChunk) {
+    try {
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+        },
+        body: JSON.stringify({ messages, context, stream: true }),
+      });
+      
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`System returned status ${res.status}. ${text.slice(0, 100)}`);
+      }
+
+      if (!res.body) {
+        throw new Error('Response body is null');
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullResponse = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') {
+              break;
+            }
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.text) {
+                fullResponse += parsed.text;
+                if (onChunk) {
+                  onChunk(parsed.text);
+                }
+              }
+              if (parsed.error) {
+                throw new Error(parsed.error);
+              }
+            } catch (e) {
+              console.warn('Failed to parse SSE chunk:', e);
+            }
+          }
+        }
+      }
+
+      return { response: fullResponse };
+    } catch (err) {
+      return { response: `[NEURAL_DISCONNECTION]: ${err.message}` };
+    }
+  },
 };

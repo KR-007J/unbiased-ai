@@ -16,6 +16,10 @@ const buildModelUrl = (model: string): string => {
   return `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${model}:generateContent`
 }
 
+const buildStreamModelUrl = (model: string): string => {
+  return `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${model}:streamGenerateContent`
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -37,7 +41,7 @@ serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const { messages, context } = await req.json()
+    const { messages, context, stream = false } = await req.json()
 
     if (!GEMINI_API_KEY) {
       throw new Error('Neural key (GEMINI_API_KEY) missing in system configuration.')
@@ -62,13 +66,15 @@ serve(async (req: Request) => {
 
     let res: Response | null = null
     let lastError: string = ''
+    let selectedModel: string = ''
 
     // Try each model in fallback chain
     for (const model of MODELS) {
       try {
-        const url = buildModelUrl(model) + '?key=' + GEMINI_API_KEY
-        console.log(`Attempting with model: ${model}`)
-        res = await fetch(url, {
+        const url = stream ? buildStreamModelUrl(model) : buildModelUrl(model)
+        const fullUrl = (url + '?key=' + GEMINI_API_KEY).replace(':streamGenerateContent', stream ? ':streamGenerateContent' : ':generateContent')
+        console.log(`Attempting with model: ${model}, streaming: ${stream}`)
+        res = await fetch(fullUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody)
@@ -76,6 +82,7 @@ serve(async (req: Request) => {
 
         if (res.ok) {
           console.log(`Success with model: ${model}`)
+          selectedModel = model
           break
         } else {
           const errorData = await res.json()
@@ -93,6 +100,80 @@ serve(async (req: Request) => {
       throw new Error(`Neural link failed: ${lastError || 'All models exhausted'}`)
     }
 
+    // Handle streaming response
+    if (stream && res.body) {
+      const encoder = new TextEncoder()
+      const reader = res.body.getReader()
+      
+      let responseText = ''
+      
+      return new Response(
+        new ReadableStream({
+          async start(controller) {
+            try {
+              let buffer = ''
+              while (true) {
+                const { done, value } = await reader.read()
+                if (done) {
+                  // Send final chunk
+                  if (buffer) {
+                    try {
+                      const chunk = JSON.parse(buffer)
+                      const text = chunk.candidates?.[0]?.content?.parts?.[0]?.text || ''
+                      if (text) {
+                        responseText += text
+                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`))
+                      }
+                    } catch (e) {
+                      console.warn('Failed to parse final chunk:', e)
+                    }
+                  }
+                  controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+                  controller.close()
+                  break
+                }
+                
+                buffer += new TextDecoder().decode(value)
+                
+                // Process complete JSON objects
+                const lines = buffer.split('\n')
+                for (let i = 0; i < lines.length - 1; i++) {
+                  const line = lines[i].trim()
+                  if (line) {
+                    try {
+                      const chunk = JSON.parse(line)
+                      const text = chunk.candidates?.[0]?.content?.parts?.[0]?.text || ''
+                      if (text) {
+                        responseText += text
+                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`))
+                      }
+                    } catch (e) {
+                      console.warn('Failed to parse chunk:', e)
+                    }
+                  }
+                }
+                buffer = lines[lines.length - 1]
+              }
+            } catch (err: unknown) {
+              const errMsg = err instanceof Error ? err.message : String(err)
+              console.error('Stream error:', errMsg)
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: errMsg })}\n\n`))
+              controller.close()
+            }
+          }
+        }),
+        {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+          }
+        }
+      )
+    }
+
+    // Handle non-streaming response
     const data = await res.json()
     const response = data.candidates?.[0]?.content?.parts?.[0]?.text || 'I apologize, the Sentinel layer was unable to construct a valid response. Please rephrase your query.'
 

@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useStore } from '../store';
 import { updateProfile } from 'firebase/auth';
 import { auth } from '../firebase';
+import NeuralLinkStatus from '../components/NeuralLinkStatus';
+import CryptographicAuditTrail from '../components/CryptographicAuditTrail';
 import toast from 'react-hot-toast';
 
 export default function SettingsPage() {
   const user = useStore((s) => s.user);
+  const analyses = useStore((s) => s.analyses);
   const setUser = useStore((s) => s.setUser);
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [saving, setSaving] = useState(false);
@@ -64,7 +68,11 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div style={{ padding: 32, maxWidth: 800 }}>
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      style={{ padding: 32, maxWidth: 1000, margin: '0 auto' }}
+    >
       <div style={{ marginBottom: 40 }}>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: 3, marginBottom: 8 }}>SYSTEM CONFIG</div>
         <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 36 }}>
@@ -72,22 +80,34 @@ export default function SettingsPage() {
         </h1>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-        {SECTIONS.map((s) => (
-          <div key={s.title} className="glass-card" style={{ padding: 32 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
-              <div style={{
-                width: 36, height: 36, borderRadius: 10,
-                background: 'rgba(0,245,255,0.1)', border: '1px solid rgba(0,245,255,0.2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18, color: 'var(--cyan)',
-              }}>{s.icon}</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, color: 'var(--text-primary)', letterSpacing: 2 }}>{s.title}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+        {/* User Settings */}
+        <div style={{ display: 'grid', gap: 24 }}>
+          {SECTIONS.map((s) => (
+            <div key={s.title} className="glass-card" style={{ padding: 32 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: 'rgba(0,245,255,0.1)', border: '1px solid rgba(0,245,255,0.2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 18, color: 'var(--cyan)',
+                }}>{s.icon}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, color: 'var(--text-primary)', letterSpacing: 2 }}>{s.title}</div>
+              </div>
+              {s.content}
             </div>
-            {s.content}
-          </div>
-        ))}
+          ))}
+        </div>
+
+        {/* Phase 4 Developer Tools */}
+        <div style={{ display: 'grid', gap: 24 }}>
+          {/* Neural Link Status */}
+          <NeuralLinkStatus />
+
+          {/* Cryptographic Audit Trail */}
+          <CryptographicAuditTrail analyses={analyses} maxItems={8} />
+        </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -5,6 +5,7 @@ import { auth } from '../firebase';
 import { useStore } from '../store';
 import toast from 'react-hot-toast';
 import ReactorLogo from './ReactorLogo';
+import { motion } from 'framer-motion';
 
 const NAV = [
   { to: '/app', label: 'NEXUS', icon: '◈', end: true, desc: 'Dashboard' },
@@ -14,14 +15,13 @@ const NAV = [
   { to: '/app/vision', label: 'VISION', icon: '👁', desc: 'Visual Bias' },
   { to: '/app/history', label: 'ARCHIVE', icon: '≡', desc: 'History' },
   { to: '/app/settings', label: 'CONFIG', icon: '⚙', desc: 'Settings' },
-];
-
-export default function Layout() {
+];export default function Layout() {
   const user = useStore((s) => s.user);
   const sidebarOpen = useStore((s) => s.sidebarOpen);
   const toggleSidebar = useStore((s) => s.toggleSidebar);
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(null);
+  const isAnalyzing = useStore((s) => s.isAnalyzing);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -49,7 +49,7 @@ export default function Layout() {
       }}>
         {/* Logo */}
         <div style={{ padding: '0 10px 32px', display: 'flex', alignItems: 'center', gap: 4 }}>
-          <ReactorLogo size={sidebarOpen ? "50px" : "40px"} />
+          <ReactorLogo size={sidebarOpen ? "50px" : "40px"} isActive={isAnalyzing} />
           {sidebarOpen && (
             <div>
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, color: 'var(--cyan)', letterSpacing: 2 }}>UNBIASED</div>
@@ -150,7 +150,15 @@ export default function Layout() {
 
       {/* Main */}
       <main style={{ flex: 1, overflow: 'auto', background: 'transparent' }}>
-        <Outlet />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+          style={{ height: '100%' }}
+        >
+          <Outlet />
+        </motion.div>
       </main>
     </div>
   );

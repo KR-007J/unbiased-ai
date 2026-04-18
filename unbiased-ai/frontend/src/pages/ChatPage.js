@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+
 import { api } from '../supabase';
 import { useStore } from '../store';
 import toast from 'react-hot-toast';
@@ -13,6 +14,7 @@ const SUGGESTIONS = [
 
 export default function ChatPage() {
   const user = useStore((s) => s.user);
+  const setIsStreaming = useStore((s) => s.setIsStreaming);
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
@@ -36,19 +38,55 @@ export default function ChatPage() {
     const userMsg = { role: 'user', content: msg, timestamp: new Date() };
     setMessages((m) => [...m, userMsg]);
     setLoading(true);
+    setIsStreaming(true);
 
     try {
       const currentAnalysis = useStore.getState().currentAnalysis;
       const conversationHistory = messages.slice(1).map((m) => ({ role: m.role, content: m.content }));
-      const data = await api.getChatResponse([...conversationHistory, { role: 'user', content: msg }], currentAnalysis);
       
-      if (data && data.response) {
-        setMessages((m) => [...m, { role: 'assistant', content: data.response, timestamp: new Date() }]);
-      } else if (data && data.content) {
-        setMessages((m) => [...m, { role: 'assistant', content: data.content, timestamp: new Date() }]);
-      } else {
+      // Add a placeholder for the assistant response
+      const assistantMsgIndex = messages.length + 1;
+      setMessages((m) => [...m, { role: 'assistant', content: '', timestamp: new Date(), streaming: true }]);
+
+      // Try streaming first, fall back to non-streaming
+      let fullResponse = '';
+      
+      try {
+        await api.getChatResponseStreaming(
+          [...conversationHistory, { role: 'user', content: msg }],
+          currentAnalysis,
+          (chunk) => {
+            fullResponse += chunk;
+            setMessages((m) => {
+              const updated = [...m];
+              updated[assistantMsgIndex].content = fullResponse;
+              return updated;
+            });
+            bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+          }
+        );
+      } catch (streamErr) {
+        // Fall back to non-streaming
+        console.warn('Streaming failed, falling back to non-streaming:', streamErr);
+        const data = await api.getChatResponse([...conversationHistory, { role: 'user', content: msg }], currentAnalysis);
+        fullResponse = data?.response || '';
+        setMessages((m) => {
+          const updated = [...m];
+          updated[assistantMsgIndex].content = fullResponse;
+          return updated;
+        });
+      }
+
+      if (!fullResponse) {
         throw new Error('Neural response is empty');
       }
+
+      // Mark as no longer streaming
+      setMessages((m) => {
+        const updated = [...m];
+        updated[assistantMsgIndex].streaming = false;
+        return updated;
+      });
     } catch (error) {
       console.error('Chat Error:', error);
       toast.error('Neural link interrupted');
@@ -56,6 +94,7 @@ export default function ChatPage() {
       setMessages((m) => [...m, { role: 'assistant', content: errorMsg, timestamp: new Date(), error: true }]);
     } finally {
       setLoading(false);
+      setIsStreaming(false);
     }
   };
 

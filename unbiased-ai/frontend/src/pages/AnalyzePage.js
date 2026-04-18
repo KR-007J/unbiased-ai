@@ -3,6 +3,8 @@ import { jsPDF } from 'jspdf';
 import { useStore } from '../store';
 import { api } from '../supabase';
 import BiasMeter from '../components/BiasMeter';
+import BiasVectorGraph from '../components/BiasVectorGraph';
+import CrossReferences from '../components/CrossReferences';
 import toast from 'react-hot-toast';
 
 const EXAMPLE_TEXTS = [
@@ -19,8 +21,11 @@ export default function AnalyzePage() {
   const [activeTab, setActiveTab] = useState('highlighted');
   const textareaRef = useRef(null);
 
+  const setIsAnalyzing = useStore((s) => s.setIsAnalyzing);
+
   const analyze = async () => {
     if (!text.trim()) { toast.error('Enter text to analyze'); return; }
+    setIsAnalyzing(true);
     setLoading(true);
     setResult(null);
     try {
@@ -28,13 +33,21 @@ export default function AnalyzePage() {
       
       if (data && data.error) {
         toast.error(data.error.includes('[SYSTEM_ERROR]') ? data.error : 'Neural link rejected: ' + data.error);
+        setIsAnalyzing(false);
         setLoading(false);
         return;
       }
 
       if (data && data.biases) {
+        // If the main analysis already contains refraction, merge it
+        if (data.objectiveRefraction) {
+          data.rewritten = data.objectiveRefraction;
+          data.rewriteExplanation = "Pre-computed by Sovereign Neural Arbiter during primary scan.";
+        }
+
         setResult(data);
         useStore.getState().setCurrentAnalysis(data);
+        
         if (user) {
           try {
             await api.saveAnalysis({ 
@@ -58,20 +71,23 @@ export default function AnalyzePage() {
     } catch (err) {
       toast.error(`Analysis failed: ${err.message}`);
     } finally {
+      setIsAnalyzing(false);
       setLoading(false);
     }
   };
 
   const rewrite = async () => {
     if (!result) return;
+    setIsAnalyzing(true);
     setLoading(true);
     try {
       const data = await api.rewriteUnbiased(text, Object.keys(result.biasTypes || {}));
       setResult((r) => ({ ...r, rewritten: data.rewritten, rewriteExplanation: data.explanation }));
-      toast.success('Rewrite generated');
+      toast.success('Refraction refreshed');
     } catch {
-      toast.error('Rewrite failed');
+      toast.error('Refraction update failed');
     } finally {
+      setIsAnalyzing(false);
       setLoading(false);
     }
   };
@@ -292,6 +308,11 @@ export default function AnalyzePage() {
                 ))}
               </div>
             )}
+
+            {/* Bias Vector Graph */}
+            {result.biasTypes && Object.keys(result.biasTypes).length > 0 && (
+              <BiasVectorGraph analysis={result} animated={true} />
+            )}
           </div>
 
           {/* Right panel - detailed findings & refraction */}
@@ -368,6 +389,18 @@ export default function AnalyzePage() {
                       <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>CONFIDENCE: {Math.round(b.confidence * 100)}%</span>
                     </div>
                     <p style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 16 }}>{b.explanation}</p>
+                    {b.counterVector && (
+                      <div style={{ padding: 12, borderRadius: 8, background: 'rgba(255,51,102,0.05)', border: '1px solid rgba(255,51,102,0.1)', marginBottom: 12 }}>
+                        <div style={{ fontSize: 10, color: '#ff3366', marginBottom: 6, fontFamily: 'var(--font-mono)' }}>COUNTER-VECTOR:</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{b.counterVector}</div>
+                      </div>
+                    )}
+                    {b.corroboratingTruth && (
+                      <div style={{ padding: 12, borderRadius: 8, background: 'rgba(0,255,136,0.05)', border: '1px solid rgba(0,255,136,0.1)', marginBottom: 12 }}>
+                        <div style={{ fontSize: 10, color: 'var(--green)', marginBottom: 6, fontFamily: 'var(--font-mono)' }}>CORROBORATING TRUTH:</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{b.corroboratingTruth}</div>
+                      </div>
+                    )}
                     <div style={{ padding: 12, borderRadius: 8, background: 'rgba(0,245,255,0.05)', border: '1px solid rgba(0,245,255,0.1)' }}>
                       <div style={{ fontSize: 10, color: 'var(--cyan)', marginBottom: 6, fontFamily: 'var(--font-mono)' }}>SUGGESTED REFRACTION:</div>
                       <div style={{ fontSize: 13, color: 'var(--text-primary)' }}>{b.suggestion}</div>
@@ -375,6 +408,11 @@ export default function AnalyzePage() {
                   </div>
                 ))}
               </div>
+
+              {/* Cross-References Component */}
+              {result.crossReferences && result.crossReferences.length > 0 && (
+                <CrossReferences analysis={result} />
+              )}
             </div>
 
             <div style={{ padding: 24, borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.2)' }}>
