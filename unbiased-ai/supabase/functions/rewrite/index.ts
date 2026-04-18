@@ -1,16 +1,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
-const GEMINI_API_VERSION = 'v1beta'
+const GEMINI_API_VERSION = 'v1'
+const GEMINI_MODEL = 'gemini-1.5-pro'
 
-const MODELS = [
-  'gemini-1.5-pro-latest',
-  'gemini-1.5-pro',
-  'gemini-1.5-flash',
-]
-
-const buildModelUrl = (model: string): string => {
-  return `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${model}:generateContent`
+const buildModelUrl = (): string => {
+  return `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`
 }
 
 const corsHeaders = {
@@ -49,34 +44,24 @@ Respond ONLY with JSON:
       generationConfig: { temperature: 0.2, maxOutputTokens: 2048, topP: 0.95 }
     }
 
-    let res: Response | null = null
-    let lastError = ''
-    let selectedModel = ''
-
-    for (const model of MODELS) {
-      try {
-        const url = buildModelUrl(model) + '?key=' + GEMINI_API_KEY
-        console.log(`[Rewrite] Attempting ${model}...`)
-        res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody)
-        })
-
-        if (res.ok) {
-          selectedModel = model
-          break
-        } else {
-          const errData = await res.json().catch(() => ({}))
-          lastError = errData.error?.message || res.statusText
-        }
-      } catch (err: any) {
-        lastError = err.message
-      }
+    if (!GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY environment variable is not set in Supabase secrets')
     }
 
-    if (!res || !res.ok) {
-      throw new Error(`Neural link failed: ${lastError || 'All models exhausted'}`)
+    const fetchUrl = buildModelUrl()
+    console.log(`[Rewrite] Using ${GEMINI_MODEL} (v1 API)...`)
+    
+    const res = await fetch(fetchUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
+    })
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ error: { message: res.statusText } }))
+      const errorMsg = errorData.error?.message || res.statusText
+      console.error(`[Rewrite Error] ${GEMINI_MODEL} failed: ${errorMsg}`)
+      throw new Error(`Gemini API error (${res.status}): ${errorMsg}`)
     }
 
     const data = await res.json()
@@ -87,16 +72,16 @@ Respond ONLY with JSON:
     try { 
       result = JSON.parse(cleaned) 
     } catch (e) { 
-      throw new Error('Failed to parse refracted text.')
+      throw new Error('Failed to parse Gemini response as JSON.')
     }
 
     return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Neural-Signature': `v1beta-${selectedModel}` }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Model': GEMINI_MODEL }
     })
   } catch (err: any) {
     console.error('[Rewrite Failure]', err)
-    return new Response(JSON.stringify({ error: '[NEURAL_REWRITE_FAILURE]: ' + err.message }), {
-      status: 200,
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }

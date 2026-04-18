@@ -5,6 +5,22 @@ const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+// Common headers for all API calls
+const apiHeaders = {
+  'Content-Type': 'application/json',
+};
+
+// Helper to format error messages
+const formatError = (status, message) => {
+  if (status === 500) {
+    return `Backend Error: ${message || 'API request failed. Check Supabase logs.'}`;
+  }
+  if (status >= 400) {
+    return `Error (${status}): ${message || 'Request failed'}`;
+  }
+  return message || 'Unknown error occurred';
+};
+
 // API helpers
 export const api = {
   async analyzeText(payload, options = {}) {
@@ -12,18 +28,17 @@ export const api = {
     try {
       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/analyze`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseAnonKey}` },
+        headers: apiHeaders,
         body: JSON.stringify(body),
       });
+      const data = await res.json();
       if (!res.ok) {
-        const errorText = await res.text();
-        console.error(`API Error (${res.status}):`, errorText);
-        return { error: `Backend unavailable (${res.status}). Ensure Supabase functions are deployed with latest code.` };
+        return { error: formatError(res.status, data.error || res.statusText) };
       }
-      return await res.json();
+      return data;
     } catch (err) {
       console.error('Network error:', err);
-      return { error: `Network error: ${err.message}. Check backend deployment.` };
+      return { error: `Network error: ${err.message}` };
     }
   },
 
@@ -31,15 +46,14 @@ export const api = {
     try {
       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/detect-bias`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseAnonKey}` },
+        headers: apiHeaders,
         body: JSON.stringify({ content, type }),
       });
+      const data = await res.json();
       if (!res.ok) {
-        const errorText = await res.text();
-        console.error(`API Error (${res.status}):`, errorText);
-        return { error: `Backend unavailable (${res.status})` };
+        return { error: formatError(res.status, data.error || res.statusText) };
       }
-      return await res.json();
+      return data;
     } catch (err) {
       console.error('Network error:', err);
       return { error: `Network error: ${err.message}` };
@@ -50,15 +64,14 @@ export const api = {
     try {
       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/rewrite`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseAnonKey}` },
+        headers: apiHeaders,
         body: JSON.stringify({ text, biasTypes }),
       });
+      const data = await res.json();
       if (!res.ok) {
-        const errorText = await res.text();
-        console.error(`API Error (${res.status}):`, errorText);
-        return { error: `Backend unavailable (${res.status}). Ensure Supabase functions are deployed.` };
+        return { error: formatError(res.status, data.error || res.statusText) };
       }
-      return await res.json();
+      return data;
     } catch (err) {
       console.error('Network error:', err);
       return { error: `Network error: ${err.message}` };
@@ -86,15 +99,14 @@ export const api = {
     try {
       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/compare`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseAnonKey}` },
+        headers: apiHeaders,
         body: JSON.stringify({ textA, textB }),
       });
+      const data = await res.json();
       if (!res.ok) {
-        const errorText = await res.text();
-        console.error(`API Error (${res.status}):`, errorText);
-        return { error: `Backend unavailable (${res.status})` };
+        return { error: formatError(res.status, data.error || res.statusText) };
       }
-      return await res.json();
+      return data;
     } catch (err) {
       console.error('Network error:', err);
       return { error: `Network error: ${err.message}` };
@@ -105,40 +117,34 @@ export const api = {
     try {
       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/chat`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseAnonKey}`,
-        },
+        headers: apiHeaders,
         body: JSON.stringify({ messages, context }),
       });
       if (!res.ok) {
         const text = await res.text();
-        return { response: `[INTEGRITY_ERROR]: System returned status ${res.status}. ${text.slice(0, 100)}` };
+        return { response: `System Error (${res.status}): ${text.slice(0, 100)}` };
       }
       return await res.json();
     } catch (err) {
-      return { response: `[NEURAL_DISCONNECTION]: ${err.message}` };
+      return { response: `Connection Error: ${err.message}` };
     }
   },
 
   async getChatResponseStreaming(messages, context = '', onChunk) {
     const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/chat`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseAnonKey}`,
-      },
-      body: JSON.stringify({ messages, context, stream: true }),
+      headers: apiHeaders,
+      body: JSON.stringify({ messages, context }),
     });
     
     if (!res.ok) {
       const text = await res.text();
       console.error(`Streaming request failed (${res.status}):`, text);
-      throw new Error(`System returned status ${res.status}. ${text.slice(0, 150)}`);
+      throw new Error(`System Error (${res.status}): ${text.slice(0, 150)}`);
     }
 
     if (!res.body) {
-      throw new Error('Response body is null - Backend not responding');
+      throw new Error('Backend disconnected: No response stream');
     }
 
     const reader = res.body.getReader();
