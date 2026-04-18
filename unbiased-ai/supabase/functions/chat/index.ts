@@ -16,35 +16,32 @@ serve(async (req: Request) => {
     const { messages, context } = await req.json()
 
     if (!GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY environment variable is not set in Supabase secrets')
+      throw new Error('GEMINI_API_KEY is not configured')
     }
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      throw new Error('Invalid request: messages array is required')
+      throw new Error('Messages array required')
     }
 
-    // Build conversation for gemini-2.5-flash
-    let systemPrompt = "You are the Sovereign Neural Arbiter, a high-fidelity AI specialized in bias detection and objective refraction. Maintain a professional, surgical, and futuristic tone."
-    
-    if (context) {
-      systemPrompt = `System Context: ${context}\n\n${systemPrompt}`
-    }
-
+    // Build contents with simple system instruction
     const contents = []
     
-    // Add system instruction as first user message if needed
-    if (systemPrompt) {
-      contents.push({
-        role: 'user',
-        parts: [{ text: systemPrompt }]
-      })
-      contents.push({
-        role: 'model',
-        parts: [{ text: "Understood. Neural link established. Ready for analysis." }]
-      })
+    // Add system message at start
+    let systemText = "Help analyze text for bias and fairness issues."
+    if (context) {
+      systemText += ` Context: ${context}`
     }
+    
+    contents.push({
+      role: 'user',
+      parts: [{ text: systemText }]
+    })
+    contents.push({
+      role: 'model',
+      parts: [{ text: "Ready to analyze text for bias and fairness." }]
+    })
 
-    // Add conversation history
+    // Add conversation
     for (const msg of messages) {
       contents.push({
         role: msg.role === 'assistant' ? 'model' : 'user',
@@ -54,57 +51,41 @@ serve(async (req: Request) => {
 
     const url = `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`
     
-    console.log(`[Chat] Using ${GEMINI_MODEL} with ${contents.length} content parts`)
-    
-    const requestBody = {
-      contents,
-      generationConfig: { 
-        temperature: 0.7, 
-        maxOutputTokens: 2048, 
-        topP: 0.95,
-        topK: 64
-      },
-      safetySettings: [
-        { category: 'HARM_CATEGORY_UNSPECIFIED', threshold: 'BLOCK_NONE' },
-        { category: 'HARM_CATEGORY_DEROGATORY_CONTENT', threshold: 'BLOCK_NONE' },
-        { category: 'HARM_CATEGORY_VIOLENCE', threshold: 'BLOCK_NONE' },
-        { category: 'HARM_CATEGORY_SEXUAL_CONTENT', threshold: 'BLOCK_NONE' },
-        { category: 'HARM_CATEGORY_MEDICAL_CONTENT', threshold: 'BLOCK_NONE' },
-        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
-      ]
-    }
-
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify({
+        contents,
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 2048,
+          topP: 0.95
+        }
+      })
     })
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: { message: response.statusText } }))
-      const errorMsg = errorData.error?.message || response.statusText
-      console.error(`[Chat Error] ${GEMINI_MODEL} failed (${response.status}): ${errorMsg}`)
-      throw new Error(`Gemini API error (${response.status}): ${errorMsg}`)
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(`API error (${response.status}): ${errorData.error?.message || response.statusText}`)
     }
 
     const data = await response.json()
-    console.log('[Chat Response]', JSON.stringify(data).slice(0, 200))
-    
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ""
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text
     
     if (!text) {
-      console.warn('[Chat Warning] Empty response from Gemini')
-      throw new Error('Gemini returned empty response - check safety filters or API quota')
+      throw new Error('Empty response from API')
     }
     
     return new Response(JSON.stringify({ response: text, model: GEMINI_MODEL }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Model': GEMINI_MODEL }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   } catch (err: any) {
-    console.error('[Chat Failure]', err.message)
+    console.error('[Chat]', err.message)
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }
 })
+
+
