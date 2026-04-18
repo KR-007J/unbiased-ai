@@ -1,11 +1,8 @@
-// @ts-ignore - Deno type definitions
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
-// @ts-ignore - Deno global API
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
-const GEMINI_API_VERSION = 'v1'
+const GEMINI_API_VERSION = 'v1beta'
 
-// Model fallback chain - try each in order
 const MODELS = [
   'gemini-1.5-pro-latest',
   'gemini-1.5-pro',
@@ -13,7 +10,7 @@ const MODELS = [
 ]
 
 const buildModelUrl = (model: string): string => {
-  return "https://generativelanguage.googleapis.com/" + GEMINI_API_VERSION + "/models/" + model + ":generateContent"
+  return `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${model}:generateContent`
 }
 
 const corsHeaders = {
@@ -28,10 +25,30 @@ serve(async (req: Request) => {
     const { content, type } = await req.json()
 
     if (!GEMINI_API_KEY) {
-      throw new Error('Neural key (GEMINI_API_KEY) missing in system configuration.')
+      throw new Error('GEMINI_API_KEY is not configured in Supabase secrets.')
     }
 
-    const prompt = "Detect specific bias instances in the following " + (type || "text") + ".\\n\\nContent:\\n\\\"\\\"\\\"\\n" + content + "\\n\\\"\\\"\\\"\\n\\nRespond ONLY with JSON:\\n{\\n  \\\"detected\\\": true|false,\\n  \\\"biasInstances\\\": [\\n    {\\n      \\\"phrase\\\": \\\"<exact phrase>\\\",\\n      \\\"biasType\\\": \\\"<gender|racial|political|age|cultural|religious|socioeconomic>\\\",\\n      \\\"severity\\\": \\\"low|medium|high\\\",\\n      \\\"explanation\\\": \\\"<explanation>\\\",\\n      \\\"suggestion\\\": \\\"<unbiased alternative>\\\"\\n    }\\n  ],\\n  \\\"overallAssessment\\\": \\\"<brief assessment>\\\"\\n}";
+    const prompt = `Identify specific bias instances in the following ${type || "text"}.
+
+Content:
+"""
+${content}
+"""
+
+Respond ONLY with JSON:
+{
+  "detected": true|false,
+  "biasInstances": [
+    {
+      "phrase": "<exact phrase>",
+      "biasType": "gender|racial|political|age|cultural|religious|socioeconomic",
+      "severity": "low|medium|high",
+      "explanation": "<explanation>",
+      "suggestion": "<unbiased alternative>"
+    }
+  ],
+  "overallAssessment": "<brief assessment>"
+}`
 
     const requestBody = {
       contents: [{ parts: [{ text: prompt }] }],
@@ -39,13 +56,13 @@ serve(async (req: Request) => {
     }
 
     let res: Response | null = null
-    let lastError: string = ''
+    let lastError = ''
+    let selectedModel = ''
 
-    // Try each model in fallback chain
     for (const model of MODELS) {
       try {
         const url = buildModelUrl(model) + '?key=' + GEMINI_API_KEY
-        console.log(`Attempting audit with model: ${model}`)
+        console.log(`[Detection] Attempting ${model}...`)
         res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -53,21 +70,18 @@ serve(async (req: Request) => {
         })
 
         if (res.ok) {
-          console.log(`Audit success with model: ${model}`)
+          selectedModel = model
           break
         } else {
-          const errorData = await res.json()
-          lastError = errorData.error?.message || 'Unknown error'
-          console.warn(`Model ${model} failed: ${lastError}`)
+          const errData = await res.json().catch(() => ({}))
+          lastError = errData.error?.message || res.statusText
         }
-      } catch (err: unknown) {
-        const errMsg = err instanceof Error ? err.message : String(err)
-        console.warn(`Model ${model} error: ${errMsg}`)
-        lastError = errMsg
+      } catch (err: any) {
+        lastError = err.message
       }
     }
 
-    if (!res?.ok) {
+    if (!res || !res.ok) {
       throw new Error(`Neural link failed: ${lastError || 'All models exhausted'}`)
     }
 
@@ -79,20 +93,17 @@ serve(async (req: Request) => {
     try { 
       result = JSON.parse(cleaned) 
     } catch (e) { 
-      console.error('Detect Parsing Error:', e)
-      result = { detected: false, biasInstances: [], overallAssessment: 'Integrity scan failed to parse neural output.' } 
+      throw new Error('Failed to parse detection output.')
     }
 
     return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Neural-Signature': `v1beta-${selectedModel}` }
     })
-  } catch (err: unknown) {
-    console.error('Detect Bias Error:', err)
-    const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-    return new Response(JSON.stringify({ error: '[SYSTEM_ERROR]: ' + errorMessage }), {
+  } catch (err: any) {
+    console.error('[Detection Failure]', err)
+    return new Response(JSON.stringify({ error: '[NEURAL_DETECTION_FAILURE]: ' + err.message }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }
 })
-

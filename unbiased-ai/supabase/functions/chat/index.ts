@@ -1,9 +1,8 @@
-// @ts-ignore - Deno type definitions
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
-const GEMINI_API_VERSION = 'v1'
-const VERSION = "1.2.3-PROD"
+// Using v1beta as it's often more stable for the newest features and models
+const GEMINI_API_VERSION = 'v1beta'
 
 const MODELS = [
   'gemini-1.5-pro-latest',
@@ -16,109 +15,127 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const SYSTEM_PROMPT = "You are the Sovereign Neural Arbiter. Tone: authoritative, analytical, objective. expertise: bias detection and forecast."
-
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const { messages, context, stream = false } = await req.json()
-    console.log("[" + VERSION + "] Chat (stream=" + stream + ")")
+    const { messages, context, stream } = await req.json()
 
-    if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY missing')
+    if (!GEMINI_API_KEY) {
+      return new Response(JSON.stringify({ error: 'GEMINI_API_KEY is not configured in Supabase secrets.' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
 
+    const lastMsg = messages[messages.length - 1]?.content || ''
+    
+    // Construct proper Gemini chat history format
     const contents = messages.map((m: any) => ({
       role: m.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: m.content }]
     }))
 
-    // Ensure system prompt is applied
-    if (contents.length === 0 || contents[0].role !== 'user') {
-      contents.unshift({ role: 'user', parts: [{ text: SYSTEM_PROMPT }] }, { role: 'model', parts: [{ text: "Acknowledged. Interface active." }] })
-    } else {
-       contents[0].parts[0].text = SYSTEM_PROMPT + "\n\n" + contents[0].parts[0].text
-    }
-
-    const requestBody = {
-      contents,
-      generationConfig: { temperature: 0.8, maxOutputTokens: 2000 }
+    // Add context if provided
+    if (context) {
+      contents.unshift({
+        role: 'user',
+        parts: [{ text: `System Context: ${context}\n\nYou are the Sovereign Neural Arbiter, a high-fidelity AI specialized in bias detection and objective refraction. Maintain a professional, surgical, and futuristic tone.` }]
+      }, {
+        role: 'model',
+        parts: [{ text: "Acknowledged. Neural link established. Sovereign Layer standing by for objective audit." }]
+      })
     }
 
     let response: Response | null = null
     let lastError = ''
+    let selectedModel = ''
 
     for (const model of MODELS) {
-      const url = "https://generativelanguage.googleapis.com/" + GEMINI_API_VERSION + "/models/" + model + ":" + (stream ? "streamGenerateContent" : "generateContent") + "?key=" + GEMINI_API_KEY
-      
       try {
-        console.log("Attempting " + model)
+        const url = `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${model}:${stream ? 'streamGenerateContent' : 'generateContent'}?key=${GEMINI_API_KEY}${stream ? '&alt=sse' : ''}`
+        
+        console.log(`[Neural Link] Attempting ${model} (${stream ? 'SSE' : 'POST'})...`)
+        
         response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody)
+          body: JSON.stringify({ 
+            contents,
+            generationConfig: { temperature: 0.7, maxOutputTokens: 2048, topP: 0.95 }
+          })
         })
 
-        if (response.ok) break
-        const err = await response.json()
-        lastError = err.error?.message || 'Unknown error'
-        console.warn(model + " failed: " + lastError)
-      } catch (e) {
-        lastError = String(e)
-        console.warn(model + " error: " + lastError)
+        if (response.ok) {
+          selectedModel = model
+          break
+        } else {
+          const errData = await response.json().catch(() => ({ error: { message: 'Unknown error' } }))
+          lastError = errData.error?.message || response.statusText
+          console.warn(`[Neural Warning] ${model} failed: ${lastError}`)
+        }
+      } catch (err: any) {
+        lastError = err.message
+        console.error(`[Neural Error] ${model} exception: ${lastError}`)
       }
     }
 
-    if (!response?.ok) throw new Error(lastError || 'Models exhausted')
+    if (!response || !response.ok) {
+      return new Response(JSON.stringify({ error: `Neural link failed after attempting all models. Last error: ${lastError}` }), {
+        status: 200, // Return 200 with error object so frontend can handle it nicely
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
 
     if (stream) {
       const { readable, writable } = new TransformStream()
       const writer = writable.getWriter()
-      const reader = response.body?.getReader()
       const encoder = new TextEncoder()
-      const decoder = new TextDecoder()
+      const reader = response.body?.getReader() // Get reader from Gemini response
 
-      if (!reader) throw new Error("Stream reader failed")
+      if (!reader) {
+        return new Response(JSON.stringify({ error: 'Gemini returned an empty stream body.' }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
 
-      // Process stream
+      // Process the stream in the background
       (async () => {
         try {
           while (true) {
             const { done, value } = await reader.read()
             if (done) break
-            
-            const chunk = decoder.decode(value)
-            const matches = chunk.match(/"text":\s*"([^"]+)"/g)
-            if (matches) {
-              for (const m of matches) {
-                const text = m.match(/"text":\s*"([^"]+)"/)?.[1]?.replace(/\\n/g, '\n').replace(/\\"/g, '"')
-                if (text) {
-                  await writer.write(encoder.encode("data: " + JSON.stringify({ text }) + "\n\n"))
-                }
-              }
-            }
+            await writer.write(value) // Forward the data as is (it's already SSE from Gemini)
           }
-          await writer.write(encoder.encode("data: [DONE]\n\n"))
         } catch (e) {
-          await writer.write(encoder.encode("data: " + JSON.stringify({ error: String(e) }) + "\n\n"))
+          console.error('[Stream Error]', e)
+          await writer.write(encoder.encode(`data: {"error": "Stream interrupted: ${e.message}"}\n\n`))
         } finally {
-          writer.close()
+          await writer.close()
         }
       })()
 
       return new Response(readable, {
-        headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' }
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+          'X-Neural-Signature': `v1beta-${selectedModel}`
+        }
       })
     } else {
       const data = await response.json()
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "The Sentinel layer was unable to generate a response. Please check your query or neural parameters."
-      return new Response(JSON.stringify({ response: text }), {
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "The Sovereign Layer encountered a void in the neural output."
+      return new Response(JSON.stringify({ response: text, model: selectedModel }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
-
   } catch (err: any) {
-    console.error(err)
-    return new Response(JSON.stringify({ response: "[SYSTEM_ERROR]: " + err.message }), {
+    console.error('[Critical System Failure]', err)
+    return new Response(JSON.stringify({ error: '[NEURAL_CRITICAL_FAILURE]: ' + err.message }), {
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }

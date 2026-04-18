@@ -1,9 +1,7 @@
-// @ts-ignore - Deno type definitions
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
-// @ts-ignore - Deno global API
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
-const GEMINI_API_VERSION = 'v1'
+const GEMINI_API_VERSION = 'v1beta'
 
 const MODELS = [
   'gemini-1.5-pro-latest',
@@ -27,12 +25,11 @@ serve(async (req: Request) => {
     const { text, biasTypes } = await req.json()
 
     if (!GEMINI_API_KEY) {
-      throw new Error('Neural key (GEMINI_API_KEY) missing in system configuration.')
+      throw new Error('GEMINI_API_KEY is not configured in Supabase secrets.')
     }
 
-    const prompt = `You are an expert in fair and inclusive language. Rewrite the following text to eliminate all bias while preserving the original meaning, tone, and intent.
-
-${biasTypes?.length > 0 ? `Focus especially on eliminating: ${biasTypes.join(', ')} bias.` : ''}
+    const prompt = `Rewrite the following text to eliminate all bias while preserving the original meaning and tone.
+${biasTypes?.length > 0 ? `Focus on: ${biasTypes.join(', ')} bias.` : ''}
 
 Original text:
 """
@@ -41,10 +38,10 @@ ${text}
 
 Respond ONLY with JSON:
 {
-  "rewritten": "<the complete unbiased rewritten text>",
-  "explanation": "<explanation of what was changed and why, in 2-4 sentences>",
-  "changesCount": <number of changes made>,
-  "biasRemoved": ["<list of specific bias instances removed>"]
+  "rewritten": "<the rewritten text>",
+  "explanation": "<explanation of changes>",
+  "changesCount": <number>,
+  "biasRemoved": ["<list>"]
 }`
 
     const requestBody = {
@@ -53,56 +50,52 @@ Respond ONLY with JSON:
     }
 
     let res: Response | null = null
-    let lastError: string = ''
+    let lastError = ''
+    let selectedModel = ''
 
     for (const model of MODELS) {
       try {
-        const fetchUrl = buildModelUrl(model) + '?key=' + GEMINI_API_KEY
-        console.log(`Rewriting with model: ${model}`)
-        res = await fetch(fetchUrl, {
+        const url = buildModelUrl(model) + '?key=' + GEMINI_API_KEY
+        console.log(`[Rewrite] Attempting ${model}...`)
+        res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody)
         })
 
         if (res.ok) {
-          console.log(`Success rewrite with model: ${model}`)
+          selectedModel = model
           break
         } else {
-          const errorData = await res.json()
-          lastError = errorData.error?.message || 'Unknown error'
-          console.warn(`Model ${model} rewrite failed: ${lastError}`)
+          const errData = await res.json().catch(() => ({}))
+          lastError = errData.error?.message || res.statusText
         }
-      } catch (err: unknown) {
-        const errMsg = err instanceof Error ? err.message : String(err)
-        console.warn(`Model ${model} rewrite error: ${errMsg}`)
-        lastError = errMsg
+      } catch (err: any) {
+        lastError = err.message
       }
     }
 
-    if (!res?.ok) {
+    if (!res || !res.ok) {
       throw new Error(`Neural link failed: ${lastError || 'All models exhausted'}`)
     }
 
     const data = await res.json()
     const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}'
     const cleaned = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-
+    
     let result
-    try {
-      result = JSON.parse(cleaned)
-    } catch (e: unknown) {
-      console.error('Rewrite Parse Error:', e)
-      result = { rewritten: text, explanation: 'Refraction failed due to neural Dissonance.', changesCount: 0, biasRemoved: [] }
+    try { 
+      result = JSON.parse(cleaned) 
+    } catch (e) { 
+      throw new Error('Failed to parse refracted text.')
     }
 
     return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Neural-Signature': `v1beta-${selectedModel}` }
     })
-  } catch (err: unknown) {
-    console.error('Rewrite Error:', err)
-    const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-    return new Response(JSON.stringify({ error: '[SYSTEM_ERROR]: ' + errorMessage }), {
+  } catch (err: any) {
+    console.error('[Rewrite Failure]', err)
+    return new Response(JSON.stringify({ error: '[NEURAL_REWRITE_FAILURE]: ' + err.message }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
