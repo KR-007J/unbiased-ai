@@ -177,13 +177,22 @@ export const api = {
           try {
             const parsed = JSON.parse(data);
             if (parsed.error) {
-              throw new Error(`Backend error: ${parsed.error}`);
+              const errMsg = parsed.error.message || parsed.error;
+              throw new Error(`Backend error: ${errMsg}`);
             }
-            if (parsed.text) {
-              fullResponse += parsed.text;
+            
+            let textChunk = '';
+            if (parsed.candidates && parsed.candidates[0]?.content?.parts?.[0]?.text) {
+              textChunk = parsed.candidates[0].content.parts[0].text;
+            } else if (parsed.text) {
+              textChunk = parsed.text;
+            }
+
+            if (textChunk) {
+              fullResponse += textChunk;
               chunkCount++;
               if (onChunk) {
-                onChunk(parsed.text);
+                onChunk(textChunk);
               }
             }
           } catch (e) {
