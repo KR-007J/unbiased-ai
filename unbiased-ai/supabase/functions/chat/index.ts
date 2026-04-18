@@ -7,9 +7,9 @@ const GEMINI_API_VERSION = 'v1'
 
 // Model fallback chain - try each in order
 const MODELS = [
-  'gemini-1.5-pro-001',  // Latest 1.5 Pro
-  'gemini-1.5-pro',      // Fallback to base 1.5 Pro
-  'gemini-1.0-pro',      // Stable fallback
+  'gemini-1.5-pro-latest', // Latest 1.5 Pro
+  'gemini-1.5-pro',        // Fallback to base 1.5 Pro
+  'gemini-1.5-flash',      // Stable fast fallback
 ]
 
 const buildModelUrl = (model: string): string => {
