@@ -21,7 +21,11 @@ export default function VisionPage() {
       const data = await api.analyzeText({ url }, { userId: user?.uid });
       
       if (data && data.error) {
-        toast.error(data.error.includes('[SYSTEM_ERROR]') ? data.error : 'Neural link rejected: ' + data.error);
+        let errorMsg = data.error;
+        if (data.error.includes('Backend unavailable') || data.error.includes('not found')) {
+          errorMsg = '[SENTINEL_ERROR]: Backend not deployed. See DEPLOYMENT_FIX.md';
+        }
+        toast.error(errorMsg.substring(0, 80) + '...');
         setLoading(false);
         return;
       }
@@ -30,7 +34,11 @@ export default function VisionPage() {
       useStore.getState().setCurrentAnalysis(data);
       toast.success('Web audit complete');
     } catch (err) {
-      toast.error('Failed to audit URL — check link or connection');
+      let displayError = 'Failed to audit URL — check link or connection';
+      if (err.message?.includes('Backend') || err.message?.includes('not found')) {
+        displayError = '[DEPLOYMENT_ERROR]: Backend functions not responding.';
+      }
+      toast.error(displayError);
     } finally {
       setLoading(false);
     }

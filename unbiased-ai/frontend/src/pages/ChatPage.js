@@ -48,11 +48,11 @@ export default function ChatPage() {
       const assistantMsgIndex = messages.length + 1;
       setMessages((m) => [...m, { role: 'assistant', content: '', timestamp: new Date(), streaming: true }]);
 
-      // Try streaming first, fall back to non-streaming
       let fullResponse = '';
       
       try {
-        await api.getChatResponseStreaming(
+        console.log('Attempting streaming response...');
+        const streamResult = await api.getChatResponseStreaming(
           [...conversationHistory, { role: 'user', content: msg }],
           currentAnalysis,
           (chunk) => {
@@ -65,20 +65,24 @@ export default function ChatPage() {
             bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
           }
         );
+        if (streamResult?.response) {
+          fullResponse = streamResult.response;
+          console.log('Stream response received, length:', fullResponse.length);
+        }
       } catch (streamErr) {
-        // Fall back to non-streaming
         console.warn('Streaming failed, falling back to non-streaming:', streamErr);
-        const data = await api.getChatResponse([...conversationHistory, { role: 'user', content: msg }], currentAnalysis);
-        fullResponse = data?.response || '';
-        setMessages((m) => {
-          const updated = [...m];
-          updated[assistantMsgIndex].content = fullResponse;
-          return updated;
-        });
+        try {
+          const data = await api.getChatResponse([...conversationHistory, { role: 'user', content: msg }], currentAnalysis);
+          fullResponse = data?.response || '';
+          console.log('Fallback response received, length:', fullResponse.length);
+        } catch (fallbackErr) {
+          console.error('Both streaming and fallback failed:', fallbackErr);
+          fullResponse = `[ERROR] Both streaming and non-streaming failed. Details: ${streamErr.message}`;
+        }
       }
 
-      if (!fullResponse) {
-        throw new Error('Neural response is empty');
+      if (!fullResponse || fullResponse.trim().length === 0) {
+        throw new Error(`Empty response from backend`);
       }
 
       // Mark as no longer streaming
@@ -89,9 +93,18 @@ export default function ChatPage() {
       });
     } catch (error) {
       console.error('Chat Error:', error);
-      toast.error('Neural link interrupted');
-      const errorMsg = error.message?.includes('[SYSTEM_ERROR]') ? error.message : 'The Sentinel layer encountered a synchronization anomaly. Please retry.';
-      setMessages((m) => [...m, { role: 'assistant', content: errorMsg, timestamp: new Date(), error: true }]);
+      const errorMsg = error.message || 'The Sentinel layer encountered a synchronization anomaly. Please retry.';
+      
+      // Enhanced error messaging for backend issues
+      let displayError = errorMsg;
+      if (errorMsg.includes('Backend unavailable') || errorMsg.includes('not found')) {
+        displayError = '[NEURAL_LINK_ERROR]: Backend functions not deployed or API key invalid. Please ensure Supabase Edge Functions are deployed. Visit: https://github.com/unbiased-ai/DEPLOYMENT_FIX.md';
+      } else if (errorMsg.includes('Network error')) {
+        displayError = '[NETWORK_ERROR]: ' + errorMsg + ' Check your internet connection.';
+      }
+      
+      toast.error(displayError.substring(0, 100) + '...');
+      setMessages((m) => [...m, { role: 'assistant', content: displayError, timestamp: new Date(), error: true }]);
     } finally {
       setLoading(false);
       setIsStreaming(false);

@@ -21,11 +21,19 @@ export default function ComparePage() {
         setResult(data);
         toast.success('Comparison complete');
       } else {
-        toast.error(data?.error || 'Neural refraction failed');
+        let errorMsg = data?.error || 'Neural refraction failed';
+        if (errorMsg.includes('Backend unavailable') || errorMsg.includes('not found')) {
+          errorMsg = '[DELTA_DISCONNECTION]: Backend not responding. Redeploy Supabase functions.';
+        }
+        toast.error(errorMsg.substring(0, 80) + '...');
       }
     } catch (error) { 
       console.error('Comparison Error:', error);
-      toast.error('Connection timeout in neural link'); 
+      let displayError = 'Connection timeout in neural link';
+      if (error.message?.includes('Backend') || error.message?.includes('not found')) {
+        displayError = '[DEPLOYMENT_ERROR]: Backend functions need redeployment.';
+      }
+      toast.error(displayError); 
     }
     finally { setLoading(false); }
   };

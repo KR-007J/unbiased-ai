@@ -13,7 +13,7 @@ const MODELS = [
 ]
 
 const buildModelUrl = (model: string): string => {
-  return `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${model}:generateContent`
+  return "https://generativelanguage.googleapis.com/" + GEMINI_API_VERSION + "/models/" + model + ":generateContent"
 }
 
 const corsHeaders = {
@@ -31,27 +31,7 @@ serve(async (req: Request) => {
       throw new Error('Neural key (GEMINI_API_KEY) missing in system configuration.')
     }
 
-    const prompt = `Detect specific bias instances in the following ${type || 'text'}.
-
-Content:
-"""
-${content}
-"""
-
-Respond ONLY with JSON:
-{
-  "detected": true|false,
-  "biasInstances": [
-    {
-      "phrase": "<exact phrase>",
-      "biasType": "<gender|racial|political|age|cultural|religious|socioeconomic>",
-      "severity": "low|medium|high",
-      "explanation": "<explanation>",
-      "suggestion": "<unbiased alternative>"
-    }
-  ],
-  "overallAssessment": "<brief assessment>"
-}`
+    const prompt = "Detect specific bias instances in the following " + (type || "text") + ".\\n\\nContent:\\n\\\"\\\"\\\"\\n" + content + "\\n\\\"\\\"\\\"\\n\\nRespond ONLY with JSON:\\n{\\n  \\\"detected\\\": true|false,\\n  \\\"biasInstances\\\": [\\n    {\\n      \\\"phrase\\\": \\\"<exact phrase>\\\",\\n      \\\"biasType\\\": \\\"<gender|racial|political|age|cultural|religious|socioeconomic>\\\",\\n      \\\"severity\\\": \\\"low|medium|high\\\",\\n      \\\"explanation\\\": \\\"<explanation>\\\",\\n      \\\"suggestion\\\": \\\"<unbiased alternative>\\\"\\n    }\\n  ],\\n  \\\"overallAssessment\\\": \\\"<brief assessment>\\\"\\n}";
 
     const requestBody = {
       contents: [{ parts: [{ text: prompt }] }],

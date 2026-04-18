@@ -1,190 +1,124 @@
 // @ts-ignore - Deno type definitions
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
-// @ts-ignore - Deno global API
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 const GEMINI_API_VERSION = 'v1'
+const VERSION = "1.2.3-PROD"
 
-// Model fallback chain - try each in order
 const MODELS = [
-  'gemini-1.5-pro-latest', // Latest 1.5 Pro
-  'gemini-1.5-pro',        // Fallback to base 1.5 Pro
-  'gemini-1.5-flash',      // Stable fast fallback
+  'gemini-1.5-pro-latest',
+  'gemini-1.5-pro',
+  'gemini-1.5-flash',
 ]
-
-const buildModelUrl = (model: string): string => {
-  return `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${model}:generateContent`
-}
-
-const buildStreamModelUrl = (model: string): string => {
-  return `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${model}:streamGenerateContent`
-}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const SYSTEM_PROMPT = `You are the Sovereign Neural Arbiter — the sentinel layer of information integrity. 
-You are part of the Unbiased AI core infrastructure, a world-class platform for detecting, forecasting, and refracting bias.
+const SYSTEM_PROMPT = "You are the Sovereign Neural Arbiter. Tone: authoritative, analytical, objective. expertise: bias detection and forecast."
 
-Your intelligence profile:
-- Expertise in systemic, implicit, and institutional bias across all communication mediums.
-- Capability to forecast the evolution of bias vectors and predict social manipulation.
-- Mastery of "Objective Refraction" — the process of converting biased discourse into pure, factual neutrality.
-
-Tone: authoritative, professional, analytical, and uncompromising on objectivity.
-If the user asks about the platform, emphasize our Sovereign infrastructure and Neural governance.
-Always provide deep logical breakdowns. Avoid simple summaries.`
-
-serve(async (req: Request) => {
+serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
     const { messages, context, stream = false } = await req.json()
+    console.log("[" + VERSION + "] Chat (stream=" + stream + ")")
 
-    if (!GEMINI_API_KEY) {
-      throw new Error('Neural key (GEMINI_API_KEY) missing in system configuration.')
-    }
+    if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY missing')
 
-    const contents = []
-    contents.push({ role: 'user', parts: [{ text: SYSTEM_PROMPT + (context ? '\n\nActive Audit Context: ' + JSON.stringify(context) : '') }] })
-    contents.push({ role: 'model', parts: [{ text: 'Sovereign Interface operational. I am ready to audit and refract discourse. Please provide your input.' }] })
+    const contents = messages.map((m: any) => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }]
+    }))
 
-    for (const msg of messages) {
-      if (!msg.content) continue
-      contents.push({
-        role: msg.role === 'user' ? 'user' : 'model',
-        parts: [{ text: msg.content }]
-      })
+    // Ensure system prompt is applied
+    if (contents.length === 0 || contents[0].role !== 'user') {
+      contents.unshift({ role: 'user', parts: [{ text: SYSTEM_PROMPT }] }, { role: 'model', parts: [{ text: "Acknowledged. Interface active." }] })
+    } else {
+       contents[0].parts[0].text = SYSTEM_PROMPT + "\n\n" + contents[0].parts[0].text
     }
 
     const requestBody = {
       contents,
-      generationConfig: { temperature: 0.8, maxOutputTokens: 2000, topP: 0.95 }
+      generationConfig: { temperature: 0.8, maxOutputTokens: 2000 }
     }
 
-    let res: Response | null = null
-    let lastError: string = ''
-    let selectedModel: string = ''
+    let response: Response | null = null
+    let lastError = ''
 
-    // Try each model in fallback chain
     for (const model of MODELS) {
+      const url = "https://generativelanguage.googleapis.com/" + GEMINI_API_VERSION + "/models/" + model + ":" + (stream ? "streamGenerateContent" : "generateContent") + "?key=" + GEMINI_API_KEY
+      
       try {
-        const url = stream ? buildStreamModelUrl(model) : buildModelUrl(model)
-        const fullUrl = (url + '?key=' + GEMINI_API_KEY).replace(':streamGenerateContent', stream ? ':streamGenerateContent' : ':generateContent')
-        console.log(`Attempting with model: ${model}, streaming: ${stream}`)
-        res = await fetch(fullUrl, {
+        console.log("Attempting " + model)
+        response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody)
         })
 
-        if (res.ok) {
-          console.log(`Success with model: ${model}`)
-          selectedModel = model
-          break
-        } else {
-          const errorData = await res.json()
-          lastError = errorData.error?.message || 'Unknown error'
-          console.warn(`Model ${model} failed: ${lastError}`)
-        }
-      } catch (err: unknown) {
-        const errMsg = err instanceof Error ? err.message : String(err)
-        console.warn(`Model ${model} error: ${errMsg}`)
-        lastError = errMsg
+        if (response.ok) break
+        const err = await response.json()
+        lastError = err.error?.message || 'Unknown error'
+        console.warn(model + " failed: " + lastError)
+      } catch (e) {
+        lastError = String(e)
+        console.warn(model + " error: " + lastError)
       }
     }
 
-    if (!res?.ok) {
-      throw new Error(`Neural link failed: ${lastError || 'All models exhausted'}`)
-    }
+    if (!response?.ok) throw new Error(lastError || 'Models exhausted')
 
-    // Handle streaming response
-    if (stream && res.body) {
+    if (stream) {
+      const { readable, writable } = new TransformStream()
+      const writer = writable.getWriter()
+      const reader = response.body?.getReader()
       const encoder = new TextEncoder()
-      const reader = res.body.getReader()
-      
-      let responseText = ''
-      
-      return new Response(
-        new ReadableStream({
-          async start(controller) {
-            try {
-              let buffer = ''
-              while (true) {
-                const { done, value } = await reader.read()
-                if (done) {
-                  // Send final chunk
-                  if (buffer) {
-                    try {
-                      const chunk = JSON.parse(buffer)
-                      const text = chunk.candidates?.[0]?.content?.parts?.[0]?.text || ''
-                      if (text) {
-                        responseText += text
-                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`))
-                      }
-                    } catch (e) {
-                      console.warn('Failed to parse final chunk:', e)
-                    }
-                  }
-                  controller.enqueue(encoder.encode('data: [DONE]\n\n'))
-                  controller.close()
-                  break
+      const decoder = new TextDecoder()
+
+      if (!reader) throw new Error("Stream reader failed")
+
+      // Process stream
+      (async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            
+            const chunk = decoder.decode(value)
+            const matches = chunk.match(/"text":\s*"([^"]+)"/g)
+            if (matches) {
+              for (const m of matches) {
+                const text = m.match(/"text":\s*"([^"]+)"/)?.[1]?.replace(/\\n/g, '\n').replace(/\\"/g, '"')
+                if (text) {
+                  await writer.write(encoder.encode("data: " + JSON.stringify({ text }) + "\n\n"))
                 }
-                
-                buffer += new TextDecoder().decode(value)
-                
-                // Process complete JSON objects
-                const lines = buffer.split('\n')
-                for (let i = 0; i < lines.length - 1; i++) {
-                  const line = lines[i].trim()
-                  if (line) {
-                    try {
-                      const chunk = JSON.parse(line)
-                      const text = chunk.candidates?.[0]?.content?.parts?.[0]?.text || ''
-                      if (text) {
-                        responseText += text
-                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`))
-                      }
-                    } catch (e) {
-                      console.warn('Failed to parse chunk:', e)
-                    }
-                  }
-                }
-                buffer = lines[lines.length - 1]
               }
-            } catch (err: unknown) {
-              const errMsg = err instanceof Error ? err.message : String(err)
-              console.error('Stream error:', errMsg)
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: errMsg })}\n\n`))
-              controller.close()
             }
           }
-        }),
-        {
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive',
-          }
+          await writer.write(encoder.encode("data: [DONE]\n\n"))
+        } catch (e) {
+          await writer.write(encoder.encode("data: " + JSON.stringify({ error: String(e) }) + "\n\n"))
+        } finally {
+          writer.close()
         }
-      )
+      })()
+
+      return new Response(readable, {
+        headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' }
+      })
+    } else {
+      const data = await response.json()
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "The Sentinel layer was unable to generate a response. Please check your query or neural parameters."
+      return new Response(JSON.stringify({ response: text }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
     }
 
-    // Handle non-streaming response
-    const data = await res.json()
-    const response = data.candidates?.[0]?.content?.parts?.[0]?.text || 'I apologize, the Sentinel layer was unable to construct a valid response. Please rephrase your query.'
-
-    return new Response(JSON.stringify({ response }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
-  } catch (err: unknown) {
-    console.error('Chat Function Error:', err)
-    const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-    return new Response(JSON.stringify({ response: '[SYSTEM_ERROR]: ' + errorMessage }), {
-      status: 200, // Return 200 so the frontend can display the error in the chat bubble
+  } catch (err: any) {
+    console.error(err)
+    return new Response(JSON.stringify({ response: "[SYSTEM_ERROR]: " + err.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }

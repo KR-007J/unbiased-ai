@@ -32,7 +32,13 @@ export default function AnalyzePage() {
       const data = await api.analyzeText(text, { userId: user?.uid });
       
       if (data && data.error) {
-        toast.error(data.error.includes('[SYSTEM_ERROR]') ? data.error : 'Neural link rejected: ' + data.error);
+        let errorMsg = data.error;
+        if (data.error.includes('Backend unavailable')) {
+          errorMsg = '[DEPLOYMENT_ERROR]: Backend not responding. Please deploy Supabase functions. See DEPLOYMENT_FIX.md';
+        } else if (data.error.includes('not found')) {
+          errorMsg = '[MODEL_ERROR]: Gemini API error. Ensure GEMINI_API_KEY is set correctly in Supabase.';
+        }
+        toast.error(errorMsg.substring(0, 80) + '...');
         setIsAnalyzing(false);
         setLoading(false);
         return;
@@ -69,7 +75,12 @@ export default function AnalyzePage() {
         throw new Error(data?.error || 'Neural computation returned malformed data');
       }
     } catch (err) {
-      toast.error(`Analysis failed: ${err.message}`);
+      const errorMsg = err.message || 'Unknown error';
+      let displayError = `Analysis failed: ${errorMsg}`;
+      if (errorMsg.includes('Backend') || errorMsg.includes('not found')) {
+        displayError = '[NEURAL_DISCONNECTION]: Backend deployment issue. Check DEPLOYMENT_FIX.md';
+      }
+      toast.error(displayError.substring(0, 80) + '...');
     } finally {
       setIsAnalyzing(false);
       setLoading(false);
