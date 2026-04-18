@@ -11,7 +11,6 @@ import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import AnalyzePage from './pages/AnalyzePage';
 import ComparePage from './pages/ComparePage';
-import ChatPage from './pages/ChatPage';
 import HistoryPage from './pages/HistoryPage';
 import SettingsPage from './pages/SettingsPage';
 import AuthPage from './pages/AuthPage';
@@ -86,7 +85,6 @@ export default function App() {
             <Route index element={<Dashboard />} />
             <Route path="analyze" element={<AnalyzePage />} />
             <Route path="compare" element={<ComparePage />} />
-            <Route path="chat" element={<ChatPage />} />
             <Route path="history" element={<HistoryPage />} />
             <Route path="vision" element={<VisionPage />} />
             <Route path="settings" element={<SettingsPage />} />

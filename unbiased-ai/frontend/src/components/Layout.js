@@ -11,7 +11,6 @@ const NAV = [
   { to: '/app', label: 'NEXUS', icon: '◈', end: true, desc: 'Dashboard' },
   { to: '/app/analyze', label: 'SCAN', icon: '⬡', desc: 'Analyze Text' },
   { to: '/app/compare', label: 'DELTA', icon: '⟺', desc: 'Compare Texts' },
-  { to: '/app/chat', label: 'NEURAL', icon: '◎', desc: 'AI Chat' },
   { to: '/app/vision', label: 'VISION', icon: '👁', desc: 'Visual Bias' },
   { to: '/app/history', label: 'ARCHIVE', icon: '≡', desc: 'History' },
   { to: '/app/settings', label: 'CONFIG', icon: '⚙', desc: 'Settings' },
