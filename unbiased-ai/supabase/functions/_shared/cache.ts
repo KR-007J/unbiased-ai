@@ -8,17 +8,8 @@ const REDIS_TOKEN = Deno.env.get('REDIS_TOKEN') || Deno.env.get('UPSTASH_REDIS_R
 let redisClient: any = null;
 
 export const getRedisClient = () => {
-  if (!redisClient && REDIS_URL) {
-    try {
-      redisClient = createClient({
-        url: REDIS_URL,
-        password: REDIS_TOKEN,
-      });
-    } catch (error) {
-      console.warn('Redis client creation failed:', error.message);
-    }
-  }
-  return redisClient;
+  // Disabling Redis TCP client as it causes edge functions to hang
+  return null;
 };
 
 // Content hashing utility

@@ -20,7 +20,6 @@ import { withRateLimit, RATE_LIMITS } from '../_shared/rate-limit.ts'
 import { logAnalysis, logApiCall, logError } from '../_shared/audit.ts'
 import { performSecurityCheck, sanitizeRequestInput, getSecurityHeaders } from '../_shared/security.ts'
 import { withRateLimit, RATE_LIMITS } from '../_shared/rate-limit.ts'
-
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 const GEMINI_API_VERSION = 'v1'
 const GEMINI_MODEL = 'gemini-2.5-flash'
@@ -313,48 +312,3 @@ Respond ONLY with JSON:
 }, 'DETECT_BIAS')
 
 serve(enhancedHandler)
-
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({ error: { message: res.statusText } }))
-      const errorMsg = errorData.error?.message || res.statusText
-      console.error(`[Detection Error] ${GEMINI_MODEL} failed: ${errorMsg}`)
-      throw new Error(`Gemini API error (${res.status}): ${errorMsg}`)
-    }
-
-    const data = await res.json()
-    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}'
-    const cleaned = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-    
-    let result
-    try { 
-      result = JSON.parse(cleaned) 
-    } catch (e) { 
-      throw new Error('Failed to parse Gemini response as JSON.')
-    }
-
-    if (cache && supabase) {
-      await supabase
-        .from('analysis_cache')
-        .upsert({ 
-          content_hash: contentHash, 
-          result, 
-          cached_at: new Date().toISOString() 
-        }, { onConflict: 'content_hash' })
-        .catch(console.error)
-    }
-
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Model': GEMINI_MODEL }
-    })
-  } catch (err: any) {
-    console.error('[Detection Failure]', err)
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
-  }
-})
-
-
-
-

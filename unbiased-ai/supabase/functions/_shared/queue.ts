@@ -40,19 +40,7 @@ export class Queue {
   }
 
   private initRedis() {
-    const REDIS_URL = this.options.redis?.url || Deno.env.get('REDIS_URL') || Deno.env.get('UPSTASH_REDIS_REST_URL');
-    const REDIS_TOKEN = this.options.redis?.token || Deno.env.get('REDIS_TOKEN') || Deno.env.get('UPSTASH_REDIS_REST_TOKEN');
-
-    if (REDIS_URL) {
-      try {
-        this.redis = createClient({
-          url: REDIS_URL,
-          password: REDIS_TOKEN,
-        });
-      } catch (error) {
-        console.warn(`Failed to initialize Redis for queue ${this.name}:`, error.message);
-      }
-    }
+    this.redis = null;
   }
 
   async add(jobName: string, data: any, options: Partial<Job> = {}): Promise<string> {
