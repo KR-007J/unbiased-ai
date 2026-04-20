@@ -19,7 +19,6 @@ import {
 import { withRateLimit, RATE_LIMITS } from '../_shared/rate-limit.ts'
 import { logAnalysis, logApiCall, logError } from '../_shared/audit.ts'
 import { performSecurityCheck, sanitizeRequestInput, getSecurityHeaders } from '../_shared/security.ts'
-import { withRateLimit, RATE_LIMITS } from '../_shared/rate-limit.ts'
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 const GEMINI_API_VERSION = 'v1'
 const GEMINI_MODEL = 'gemini-2.5-flash'
@@ -45,6 +44,14 @@ const enhancedHandler = withRateLimit(async (req: Request) => {
     const rawInput = await req.json()
     const sanitizedInput = sanitizeRequestInput(rawInput)
     const { content, type = 'text', cache = true, metadata = {} } = sanitizedInput
+
+    // Extract user ID from auth header (simplified)
+    const authHeader = req.headers.get('authorization')
+    let userId: string | null = null
+    if (authHeader) {
+      // TODO: Properly decode JWT to extract user ID
+      userId = 'authenticated-user' // Placeholder
+    }
 
     // Perform security check
     const securityCheck = await performSecurityCheck(req, userId || undefined)
@@ -77,13 +84,7 @@ const enhancedHandler = withRateLimit(async (req: Request) => {
       throw new Error('GEMINI_API_KEY is not configured in Supabase secrets.')
     }
 
-    // Extract user ID from auth header (simplified)
-    const authHeader = req.headers.get('authorization')
-    let userId: string | null = null
-    if (authHeader) {
-      // TODO: Properly decode JWT to extract user ID
-      userId = 'authenticated-user' // Placeholder
-    }
+    // UserId extraction moved above security check
 
     const supabase = SUPABASE_URL && SUPABASE_ANON_KEY
       ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
