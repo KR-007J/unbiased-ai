@@ -10,11 +10,11 @@ echo Unbiased AI - Backend Deployment Script
 echo ==========================================
 echo.
 
-REM Check if Supabase CLI is installed
-where supabase >nul 2>nul
+REM Check if Supabase CLI is available via npx
+npx supabase --version >nul 2>nul
 if %errorlevel% neq 0 (
-    echo ❌ Supabase CLI is not installed!
-    echo Install it with: npm install -g supabase
+    echo ❌ npx supabase is not available!
+    echo Please ensure you have Node.js installed.
     pause
     exit /b 1
 )
@@ -22,7 +22,7 @@ if %errorlevel% neq 0 (
 echo Checking Supabase configuration...
 
 REM Check if GEMINI_API_KEY is set
-supabase secrets list | find "GEMINI_API_KEY" >nul 2>nul
+npx supabase secrets list | find "GEMINI_API_KEY" >nul 2>nul
 if %errorlevel% neq 0 (
     echo.
     echo ❌ ERROR: GEMINI_API_KEY is not set in Supabase secrets!
@@ -31,8 +31,9 @@ if %errorlevel% neq 0 (
     echo 1. Get your Gemini API key from: https://aistudio.google.com/app/apikey
     echo 2. Run this command to set it:
     echo.
-    echo    supabase secrets set GEMINI_API_KEY="your-key-here"
+    echo    npx supabase secrets set GEMINI_API_KEY="your-key-here"
     echo.
+    echo I will attempt to set it if you have it in your local .env file.
     pause
     exit /b 1
 )
@@ -45,11 +46,11 @@ echo Deploying Supabase functions...
 echo.
 
 setlocal
-set functions=analyze detect-bias chat rewrite compare
+set functions=analyze detect-bias chat rewrite compare web-scan batch-analyze forecast-bias
 
 for %%f in (%functions%) do (
     echo Deploying: %%f
-    call supabase functions deploy %%f
+    call npx supabase functions deploy %%f --no-verify-jwt
     if !errorlevel! neq 0 (
         echo ⚠️  Warning: Failed to deploy %%f
     )

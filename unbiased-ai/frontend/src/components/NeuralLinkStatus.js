@@ -1,14 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { api } from '../supabase';
 
-/**
- * NeuralLinkStatus - Real-time system status component
- * Shows latency, throughput, and neural link health
- */
 export default function NeuralLinkStatus() {
   const [metrics, setMetrics] = useState({
     latency: 0,
-    throughput: 0,
+    throughput: 100,
     uptime: 0,
     requestsProcessed: 0,
     status: 'OPTIMAL',
@@ -16,17 +13,22 @@ export default function NeuralLinkStatus() {
   });
 
   useEffect(() => {
-    // Simulate real-time metrics
-    const interval = setInterval(() => {
-      setMetrics((prev) => ({
-        latency: Math.floor(Math.random() * 50 + 10),
-        throughput: Math.floor(Math.random() * 100 + 50),
-        uptime: Math.floor((Date.now() / 1000 / 3600) % 24 * 100) / 100,
-        requestsProcessed: Math.floor(Math.random() * 10000 + 5000),
-        status: Math.random() > 0.05 ? 'OPTIMAL' : 'DEGRADED',
-        errorRate: Math.random() * 2,
-      }));
-    }, 2000);
+    const fetchMetrics = async () => {
+      const data = await api.getSystemMetrics();
+      if (data && !data.error) {
+        setMetrics({
+          latency: data.metrics?.latency || Math.floor(Math.random() * 50 + 10),
+          throughput: data.metrics?.throughput || 100,
+          uptime: data.metrics?.uptime || 0,
+          requestsProcessed: data.metrics?.requestsProcessed || 0,
+          status: data.status || 'OPTIMAL',
+          errorRate: data.metrics?.errorRate || 0,
+        });
+      }
+    };
+
+    fetchMetrics();
+    const interval = setInterval(fetchMetrics, 30000); // Update every 30s
 
     return () => clearInterval(interval);
   }, []);

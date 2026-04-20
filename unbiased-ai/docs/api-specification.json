@@ -1,0 +1,794 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Unbiased AI API",
+    "description": "Enterprise-grade API for bias detection, analysis, and governance",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Unbiased AI Support",
+      "email": "support@unbiased-ai.dev",
+      "url": "https://unbiased-ai.dev"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.unbiased-ai.dev/v1",
+      "description": "Production server"
+    },
+    {
+      "url": "https://staging-api.unbiased-ai.dev/v1",
+      "description": "Staging server"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Analysis",
+      "description": "Text and content bias analysis operations"
+    },
+    {
+      "name": "Chat",
+      "description": "AI-powered conversational assistance"
+    },
+    {
+      "name": "Organizations",
+      "description": "Multi-tenant organization management"
+    },
+    {
+      "name": "Batch Processing",
+      "description": "Large-scale batch analysis operations"
+    },
+    {
+      "name": "GDPR Compliance",
+      "description": "Data protection and privacy operations"
+    },
+    {
+      "name": "Monitoring",
+      "description": "System monitoring and analytics"
+    },
+    {
+      "name": "Scaling",
+      "description": "Load balancing and auto-scaling"
+    }
+  ],
+  "paths": {
+    "/detect-bias": {
+      "post": {
+        "tags": ["Analysis"],
+        "summary": "Detect bias in text content",
+        "description": "Analyze text for various types of bias including gender, racial, political, age, cultural, and socioeconomic bias.",
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BiasDetectionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bias analysis completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BiasDetectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitError"
+                }
+              }
+            }
+          }
+        },
+        "x-code-samples": [
+          {
+            "lang": "javascript",
+            "source": "const response = await fetch('/api/detect-bias', {\n  method: 'POST',\n  headers: {\n    'Content-Type': 'application/json',\n    'Authorization': 'Bearer YOUR_TOKEN'\n  },\n  body: JSON.stringify({\n    content: 'He is a doctor and she is a nurse',\n    type: 'text'\n  })\n});\n\nconst result = await response.json();"
+          },
+          {
+            "lang": "python",
+            "source": "import requests\n\nresponse = requests.post('/api/detect-bias',\n  json={\n    'content': 'He is a doctor and she is a nurse',\n    'type': 'text'\n  },\n  headers={'Authorization': 'Bearer YOUR_TOKEN'}\n)\n\nresult = response.json()"
+          }
+        ]
+      }
+    },
+    "/rewrite": {
+      "post": {
+        "tags": ["Analysis"],
+        "summary": "Rewrite text to remove bias",
+        "description": "Generate unbiased alternatives to biased text while preserving meaning and tone.",
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RewriteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Text rewritten successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RewriteResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/compare": {
+      "post": {
+        "tags": ["Analysis"],
+        "summary": "Compare two texts for bias",
+        "description": "Compare two pieces of content to determine which is more objective and identify specific bias differences.",
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompareRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Text comparison completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompareResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyze": {
+      "post": {
+        "tags": ["Analysis"],
+        "summary": "Comprehensive content analysis",
+        "description": "Perform deep analysis of text or web content with detailed bias breakdown and recommendations.",
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComprehensiveAnalysisRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Comprehensive analysis completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComprehensiveAnalysisResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/send": {
+      "post": {
+        "tags": ["Chat"],
+        "summary": "Send message to AI assistant",
+        "description": "Send a message to the AI assistant and receive a response focused on bias awareness and ethical communication.",
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatMessageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatMessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/history": {
+      "get": {
+        "tags": ["Chat"],
+        "summary": "Get conversation history",
+        "description": "Retrieve the message history for a specific conversation.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "conversationId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 50, "maximum": 100 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": { "type": "integer", "default": 0 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversation history retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationHistoryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/conversations": {
+      "get": {
+        "tags": ["Chat"],
+        "summary": "List user conversations",
+        "description": "Get a list of all conversations for the authenticated user.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 20 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversations retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationsListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/organizations": {
+      "get": {
+        "tags": ["Organizations"],
+        "summary": "List user organizations",
+        "description": "Get all organizations that the authenticated user belongs to.",
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": {
+            "description": "Organizations retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationsListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Organizations"],
+        "summary": "Create new organization",
+        "description": "Create a new organization and automatically assign the creator as owner.",
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrganizationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Organization created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/organizations/{organizationId}": {
+      "get": {
+        "tags": ["Organizations"],
+        "summary": "Get organization details",
+        "description": "Get detailed information about a specific organization.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Organization details retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationDetailsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/organizations/{organizationId}/invite": {
+      "post": {
+        "tags": ["Organizations"],
+        "summary": "Invite user to organization",
+        "description": "Send an invitation to a user to join the organization.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Invitation sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/organizations/accept-invitation": {
+      "post": {
+        "tags": ["Organizations"],
+        "summary": "Accept organization invitation",
+        "description": "Accept an invitation to join an organization using the invitation token.",
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptInvitationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Invitation accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptInvitationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/batch-analyze": {
+      "post": {
+        "tags": ["Batch Processing"],
+        "summary": "Analyze multiple texts in batch",
+        "description": "Process multiple texts for bias analysis asynchronously with progress tracking.",
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchAnalysisRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Batch processing initiated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchAnalysisResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/batch/{batchId}/status": {
+      "get": {
+        "tags": ["Batch Processing"],
+        "summary": "Get batch processing status",
+        "description": "Check the status and progress of a batch analysis job.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "batchId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Batch status retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gdpr/export": {
+      "post": {
+        "tags": ["GDPR Compliance"],
+        "summary": "Export user data (GDPR Article 20)",
+        "description": "Export all personal data associated with the authenticated user in a machine-readable format.",
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": {
+            "description": "Data export completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataExportResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gdpr/delete": {
+      "post": {
+        "tags": ["GDPR Compliance"],
+        "summary": "Delete user data (GDPR Article 17)",
+        "description": "Permanently delete all personal data associated with the authenticated user.",
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DataDeletionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Data deletion initiated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataDeletionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gdpr/consent": {
+      "get": {
+        "tags": ["GDPR Compliance"],
+        "summary": "Get consent status",
+        "description": "Check the current consent status for data processing activities.",
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": {
+            "description": "Consent status retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["GDPR Compliance"],
+        "summary": "Update consent preferences",
+        "description": "Update user consent preferences for data processing activities.",
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateConsentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Consent updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateConsentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/monitoring/dashboard": {
+      "get": {
+        "tags": ["Monitoring"],
+        "summary": "Get system dashboard metrics",
+        "description": "Retrieve comprehensive system metrics for monitoring dashboard.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["1h", "24h", "7d", "30d"],
+              "default": "24h"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard metrics retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardMetricsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/monitoring/alerts": {
+      "get": {
+        "tags": ["Monitoring"],
+        "summary": "Get active alerts",
+        "description": "Retrieve all active system alerts and notifications.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "severity",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["low", "medium", "high", "critical", "all"],
+              "default": "all"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Alerts retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scaling/status": {
+      "get": {
+        "tags": ["Scaling"],
+        "summary": "Get scaling status",
+        "description": "Check current system load and scaling recommendations.",
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": {
+            "description": "Scaling status retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScalingStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "BiasDetectionRequest": {
+        "type": "object",
+        "required": ["content"],
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "Text content to analyze for bias",
+            "maxLength": 10000
+          },
+          "type": {
+            "type": "string",
+            "enum": ["text", "email", "social_media", "news"],
+            "default": "text",
+            "description": "Type of content being analyzed"
+          },
+          "metadata": {
+            "type": "object",
+            "description": "Additional metadata about the content"
+          }
+        }
+      },
+      "BiasDetectionResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "detected": { "type": "boolean" },
+              "biasInstances": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "phrase": { "type": "string" },
+                    "biasType": {
+                      "type": "string",
+                      "enum": ["gender", "racial", "political", "age", "cultural", "socioeconomic"]
+                    },
+                    "severity": { "type": "string", "enum": ["low", "medium", "high"] },
+                    "explanation": { "type": "string" },
+                    "suggestion": { "type": "string" }
+                  }
+                }
+              },
+              "overallAssessment": { "type": "string" }
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "processingTime": { "type": "number" },
+              "model": { "type": "string" },
+              "cached": { "type": "boolean" }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "status": { "type": "integer" },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "details": { "type": "object" }
+            }
+          }
+        }
+      },
+      "RateLimitError": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string", "example": "RATE_LIMIT_EXCEEDED" },
+              "message": { "type": "string" },
+              "retryAfter": { "type": "number" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

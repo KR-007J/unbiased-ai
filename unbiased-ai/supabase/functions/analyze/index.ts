@@ -1,20 +1,40 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import {
+  getCachedResult,
+  setCachedResult,
+  CACHE_KEYS,
+  trackEvent,
+  hashContent
+} from '../_shared/cache.ts'
+import {
+  handleCors,
+  createSuccessResponse,
+  createErrorResponse,
+  handleError,
+  validateContent,
+  validateUrl,
+  corsHeaders,
+  ERROR_CODES
+} from '../_shared/api.ts'
+import { withRateLimit, RATE_LIMITS } from '../_shared/rate-limit.ts'
+import { logAnalysis, logApiCall, logError } from '../_shared/audit.ts'
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 const GEMINI_API_VERSION = 'v1'
 const GEMINI_MODEL = 'gemini-2.5-flash'
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')
 
 const buildModelUrl = (): string => {
   return `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`
 }
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+// Apply rate limiting and enterprise utilities
+const enhancedHandler = withRateLimit(async (req: Request) => {
+  // Handle CORS
+  const corsResponse = handleCors(req)
+  if (corsResponse) return corsResponse
 
   try {
     const { text, url } = await req.json()

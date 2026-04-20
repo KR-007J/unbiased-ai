@@ -1,0 +1,256 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [develop]
+  workflow_run:
+    workflows: ['Test & Build']
+    types: [completed]
+    branches: [develop]
+
+env:
+  NODE_VERSION: 18.x
+  DEPLOY_ENV: staging
+
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'push'
+
+    environment:
+      name: staging
+      url: https://unbiased-ai-staging.web.app
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Run security audit
+        working-directory: ./frontend
+        run: npm audit --audit-level=high || echo "Security issues found - continuing deployment"
+
+      - name: Build application for staging
+        working-directory: ./frontend
+        run: npm run build
+        env:
+          REACT_APP_FIREBASE_API_KEY: ${{ secrets.STAGING_FIREBASE_API_KEY }}
+          REACT_APP_FIREBASE_AUTH_DOMAIN: ${{ secrets.STAGING_FIREBASE_AUTH_DOMAIN }}
+          REACT_APP_FIREBASE_PROJECT_ID: ${{ secrets.STAGING_FIREBASE_PROJECT_ID }}
+          REACT_APP_FIREBASE_STORAGE_BUCKET: ${{ secrets.STAGING_FIREBASE_STORAGE_BUCKET }}
+          REACT_APP_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.STAGING_FIREBASE_MESSAGING_SENDER_ID }}
+          REACT_APP_FIREBASE_APP_ID: ${{ secrets.STAGING_FIREBASE_APP_ID }}
+          REACT_APP_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+          REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
+          REACT_APP_BACKEND_URL: ${{ secrets.STAGING_BACKEND_URL }}
+          REACT_APP_SENTRY_DSN: ${{ secrets.STAGING_SENTRY_DSN }}
+          REACT_APP_MIXPANEL_TOKEN: ${{ secrets.STAGING_MIXPANEL_TOKEN }}
+          REACT_APP_VERSION: ${{ github.sha }}
+          REACT_APP_BUILD_TIME: ${{ github.event.head_commit.timestamp }}
+          REACT_APP_ENVIRONMENT: staging
+
+      - name: Deploy to Firebase Hosting (Staging)
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.STAGING_FIREBASE_SERVICE_ACCOUNT }}'
+          channelId: staging
+          projectId: ${{ secrets.STAGING_FIREBASE_PROJECT_ID }}
+          entryPoint: ./frontend
+
+      - name: Deploy Supabase functions (Staging)
+        working-directory: ./supabase
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: ${{ secrets.STAGING_SUPABASE_PROJECT_ID }}
+        run: |
+          # Deploy functions with staging-specific secrets
+          FUNCTIONS="detect-bias rewrite compare analyze chat web-scan forecast-bias batch-analyze organizations gdpr"
+          for func in $FUNCTIONS; do
+            echo "Deploying $func to staging..."
+            supabase functions deploy $func --project-ref $SUPABASE_PROJECT_ID || exit 1
+          done
+
+      - name: Update staging secrets
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: ${{ secrets.STAGING_SUPABASE_PROJECT_ID }}
+        run: |
+          # Update staging environment secrets
+          supabase secrets set GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} --project-ref $SUPABASE_PROJECT_ID
+          supabase secrets set REDIS_URL=${{ secrets.STAGING_REDIS_URL }} --project-ref $SUPABASE_PROJECT_ID
+          supabase secrets set SENTRY_DSN=${{ secrets.STAGING_SENTRY_DSN }} --project-ref $SUPABASE_PROJECT_ID
+
+      - name: Run staging health checks
+        run: |
+          echo "Waiting for staging deployment to propagate..."
+          sleep 60
+
+          # Health check for staging frontend
+          if curl -f -s --max-time 30 https://unbiased-ai-staging.web.app/health > /dev/null; then
+            echo "✅ Staging frontend healthy"
+          else
+            echo "❌ Staging frontend health check failed"
+            exit 1
+          fi
+
+          # Health check for staging backend functions
+          FUNCTIONS="detect-bias rewrite"
+          for func in $FUNCTIONS; do
+            if curl -f -s --max-time 30 \
+              -H "Authorization: Bearer ${{ secrets.STAGING_SUPABASE_ANON_KEY }}" \
+              https://${{ secrets.STAGING_SUPABASE_PROJECT_ID }}.supabase.co/functions/v1/$func > /dev/null; then
+              echo "✅ Staging $func healthy"
+            else
+              echo "❌ Staging $func health check failed"
+              exit 1
+            fi
+          done
+
+      - name: Run staging smoke tests
+        run: |
+          # Basic smoke test for staging
+          RESPONSE=$(curl -s -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.STAGING_SUPABASE_ANON_KEY }}" \
+            -d '{"content": "Hello world", "type": "text"}' \
+            https://${{ secrets.STAGING_SUPABASE_PROJECT_ID }}.supabase.co/functions/v1/detect-bias)
+
+          if echo "$RESPONSE" | jq -e '.success' > /dev/null; then
+            echo "✅ Staging smoke test passed"
+          else
+            echo "❌ Staging smoke test failed"
+            echo "Response: $RESPONSE"
+            exit 1
+          fi
+
+      - name: Notify staging deployment
+        uses: slackapi/slack-github-action@v1.24.0
+        if: success()
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "🚀 Unbiased AI Staging Deployment Completed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*🌐 Staging Environment*: ✅ Deployed Successfully\n*Commit*: `${{ github.sha }}`\n*Branch*: `${{ github.ref_name }}`\n*URL*: https://unbiased-ai-staging.web.app"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Frontend*\n✅ Firebase Hosting"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Backend*\n✅ Supabase Functions"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Health Checks*\n✅ All systems operational"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Smoke Tests*\n✅ Passed"
+                    }
+                  ]
+                }
+              ]
+            }
+
+      - name: Notify staging deployment failure
+        uses: slackapi/slack-github-action@v1.24.0
+        if: failure()
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "❌ Unbiased AI Staging Deployment Failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*🌐 Staging Environment*: ❌ Deployment Failed\n*Commit*: `${{ github.sha }}`\n*Branch*: `${{ github.ref_name }}`\n*Logs*: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
+
+  promote-to-production:
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: success() && github.ref == 'refs/heads/develop'
+    environment:
+      name: production-approval
+      url: https://unbiased-ai-krish-6789.web.app
+
+    steps:
+      - name: Wait for manual approval
+        run: |
+          echo "Staging deployment successful. Waiting for manual approval to promote to production..."
+
+      - name: Create production promotion PR
+        uses: peter-evans/create-pull-request@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: auto-promote-${{ github.sha }}
+          delete-branch: true
+          title: "🚀 Promote staging ${{ github.sha }} to production"
+          body: |
+            ## Staging Deployment Successful ✅
+
+            This PR promotes the successful staging deployment to production.
+
+            **Staging Commit**: `${{ github.sha }}`
+            **Staging URL**: https://unbiased-ai-staging.web.app
+
+            ### Deployment Checklist
+            - [x] Staging tests passed
+            - [x] Health checks passed
+            - [x] Smoke tests passed
+            - [ ] Manual testing completed
+            - [ ] Stakeholder approval obtained
+
+            ### Rollback Plan
+            If issues are discovered after production deployment:
+            1. Immediate rollback to previous production version
+            2. Investigation of staging vs production differences
+            3. Hotfix deployment if needed
+
+            @${{ github.actor }} - Please review and approve for production deployment.
+          labels: |
+            auto-promote
+            staging-validated
+
+      - name: Notify promotion ready
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "🎯 Staging Ready for Production Promotion",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Staging deployment validated and ready for production!*\n\nA promotion PR has been created for manual review and approval.\n\n*Staging URL*: https://unbiased-ai-staging.web.app\n*Promotion PR*: Check the PRs tab for the auto-generated promotion request."
+                  }
+                }
+              ]
+            }

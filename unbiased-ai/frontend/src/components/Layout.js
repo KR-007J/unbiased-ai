@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
@@ -11,16 +11,26 @@ const NAV = [
   { to: '/app', label: 'NEXUS', icon: '◈', end: true, desc: 'Dashboard' },
   { to: '/app/analyze', label: 'SCAN', icon: '⬡', desc: 'Analyze Text' },
   { to: '/app/compare', label: 'DELTA', icon: '⟺', desc: 'Compare Texts' },
-  { to: '/app/vision', label: 'VISION', icon: '👁', desc: 'Visual Bias' },
+  { to: '/app/battle', label: 'BATTLE', icon: '⚔', desc: 'Bias Battle' },
+  { to: '/app/chat', label: 'ARBITER', icon: '💬', desc: 'Ethical Chat' },
+  { to: '/app/web-scan', label: 'SENTINEL', icon: '🌐', desc: 'Web Scanner' },
+  { to: '/app/news-bias', label: 'NEWS', icon: '📰', desc: 'News Bias Scanner' },
+  { to: '/app/fingerprint', label: 'FINGERPRINT', icon: '👁', desc: 'Bias Fingerprint' },
+  { to: '/app/community', label: 'NEXUS', icon: '👥', desc: 'Community Hub' },
+  { to: '/app/analytics', label: 'INSIGHTS', icon: '📊', desc: 'Analytics' },
+  { to: '/app/vision', label: 'VISION', icon: '◎', desc: 'Visual Bias' },
   { to: '/app/history', label: 'ARCHIVE', icon: '≡', desc: 'History' },
   { to: '/app/settings', label: 'CONFIG', icon: '⚙', desc: 'Settings' },
-];export default function Layout() {
+];
+
+export default function Layout() {
   const user = useStore((s) => s.user);
   const sidebarOpen = useStore((s) => s.sidebarOpen);
   const toggleSidebar = useStore((s) => s.toggleSidebar);
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(null);
   const isAnalyzing = useStore((s) => s.isAnalyzing);
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -28,51 +38,70 @@ const NAV = [
     navigate('/');
   };
 
+  useEffect(() => {
+    if (isMobile && sidebarOpen) {
+      toggleSidebar();
+    }
+  }, [isMobile]); // eslint-disable-line
+
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', flexDirection: isMobile ? 'column' : 'row' }}>
       {/* Sidebar */}
       <aside style={{
-        width: sidebarOpen ? 220 : 72,
-        minWidth: sidebarOpen ? 220 : 72,
+        width: sidebarOpen ? 220 : (isMobile ? '100%' : 72),
+        height: isMobile && !sidebarOpen ? 60 : '100%',
+        minWidth: sidebarOpen ? 220 : (isMobile ? '100%' : 72),
         background: 'rgba(2, 5, 20, 0.95)',
         backdropFilter: 'blur(30px)',
-        borderRight: '1px solid rgba(0,245,255,0.1)',
+        borderRight: isMobile ? 'none' : '1px solid rgba(0,245,255,0.1)',
+        borderBottom: isMobile ? '1px solid rgba(0,245,255,0.1)' : 'none',
         display: 'flex',
-        flexDirection: 'column',
-        padding: '24px 0',
-        transition: 'width 0.3s cubic-bezier(0.4,0,0.2,1)',
+        flexDirection: isMobile && !sidebarOpen ? 'row' : 'column',
+        padding: isMobile && !sidebarOpen ? '0 16px' : '24px 0',
+        transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
         overflow: 'hidden',
         position: 'relative',
         zIndex: 100,
         boxShadow: '4px 0 30px rgba(0,0,0,0.5)',
       }}>
         {/* Logo */}
-        <div style={{ padding: '0 10px 32px', display: 'flex', alignItems: 'center', gap: 4 }}>
+        <div style={{ padding: isMobile && !sidebarOpen ? '0' : '0 10px 32px', display: 'flex', alignItems: 'center', gap: 4, flex: isMobile && !sidebarOpen ? 1 : 'none' }}>
           <ReactorLogo size={sidebarOpen ? "50px" : "40px"} isActive={isAnalyzing} />
-          {sidebarOpen && (
+          {(sidebarOpen || isMobile) && (
             <div>
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, color: 'var(--cyan)', letterSpacing: 2 }}>UNBIASED</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: 3 }}>AI SYSTEM v2.0</div>
+              {!isMobile && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: 3 }}>AI SYSTEM v2.0</div>}
             </div>
           )}
         </div>
 
         {/* Toggle */}
         <button onClick={toggleSidebar} style={{
-          position: 'absolute', top: 28, right: -12,
-          width: 24, height: 24, borderRadius: '50%',
+          position: isMobile && !sidebarOpen ? 'static' : 'absolute', 
+          top: 28, right: isMobile ? 16 : -12,
+          width: 32, height: 32, borderRadius: '8px',
           background: 'rgba(0,245,255,0.1)', border: '1px solid rgba(0,245,255,0.3)',
-          color: 'var(--cyan)', cursor: 'pointer', fontSize: 10,
+          color: 'var(--cyan)', cursor: 'pointer', fontSize: 14,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 10,
         }}>
-          {sidebarOpen ? '◄' : '►'}
+          {sidebarOpen ? '⨉' : '☰'}
         </button>
 
         {/* Nav */}
-        <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, padding: '0 12px' }}>
+        <nav style={{ 
+          flex: 1, 
+          display: (isMobile && !sidebarOpen) ? 'none' : 'flex', 
+          flexDirection: 'column', 
+          gap: 4, 
+          padding: '0 12px',
+          overflowY: 'auto'
+        }}>
           {NAV.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.end}
+              className={!sidebarOpen && !isMobile ? 'tooltip-cyber' : ''}
+              data-tip={item.desc}
+              onClick={() => isMobile && sidebarOpen && toggleSidebar()}
               onMouseEnter={() => setHovered(item.to)}
               onMouseLeave={() => setHovered(null)}
               style={({ isActive }) => ({
@@ -93,13 +122,17 @@ const NAV = [
                 whiteSpace: 'nowrap',
               })}>
               <span style={{ fontSize: 16, flexShrink: 0, filter: 'drop-shadow(0 0 4px currentColor)' }}>{item.icon}</span>
-              {sidebarOpen && <span>{item.label}</span>}
+              {(sidebarOpen || (isMobile && sidebarOpen)) && <span>{item.label}</span>}
             </NavLink>
           ))}
         </nav>
 
         {/* User */}
-        <div style={{ padding: '16px 12px 0', borderTop: '1px solid rgba(0,245,255,0.08)' }}>
+        <div style={{ 
+          padding: '16px 12px 0', 
+          borderTop: '1px solid rgba(0,245,255,0.08)',
+          display: (isMobile && !sidebarOpen) ? 'none' : 'block'
+        }}>
           {user && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', marginBottom: 8 }}>
               <div style={{

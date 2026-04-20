@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { api } from '../supabase';
 
 import StatCard from '../components/StatCard';
 import BiasMeter from '../components/BiasMeter';
@@ -8,16 +9,28 @@ import { BIAS_CATEGORIES } from '../constants';
 import BiasGlobe from '../components/BiasGlobe';
 
 export default function Dashboard() {
-  const stats = { totalAnalyses: 1248, totalUsers: 582, globalBiasIndex: 0.62 };
-  // eslint-disable-next-line
+  const [stats, setStats] = useState({ totalAnalyses: 1248, totalUsers: 582, globalBiasIndex: 0.62, latency: 24, throughput: 98.4, status: 'OPTIMAL' });
   const [recentAnalyses, setRecentAnalyses] = useState([]);
 
   useEffect(() => {
-    // In a real app, fetch these from Supabase
+    const fetchData = async () => {
+      const metrics = await api.getSystemMetrics();
+      if (metrics && !metrics.error) {
+        setStats(prev => ({
+          ...prev,
+          latency: metrics.metrics?.latency || 24,
+          throughput: metrics.metrics?.throughput || 98.4,
+          status: metrics.status || 'OPTIMAL'
+        }));
+      }
+    };
+    fetchData();
+    // Simulate real-time updates for news/fingerprint metrics in a real app
     setRecentAnalyses([
-      { id: 1, type: 'Political', score: 0.8, text: 'The Senator confirmed that the budget...', time: '2m ago' },
-      { id: 2, type: 'Gender', score: 0.6, text: 'Looking for a strong manpower solution...', time: '15m ago' },
-      { id: 3, type: 'Racial', score: 0.9, text: 'Certain neighborhoods underperform...', time: '1h ago' },
+      { id: 1, type: 'News Scan', score: 0.15, text: 'Climate Reform Discourse', time: 'Just now' },
+      { id: 2, type: 'Battle', score: 0.22, text: 'Text A vs Text B', time: '5m ago' },
+      { id: 3, type: 'Fingerprint', score: 0.1, text: 'User Profile: Objective Observer', time: '12m ago' },
+      { id: 4, type: 'Political', score: 0.8, text: 'The Senator confirmed that the budget...', time: '1h ago' },
     ]);
   }, []);
 
@@ -47,7 +60,7 @@ export default function Dashboard() {
           </motion.h1>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>NETWORK STATUS: <span style={{ color: 'var(--green)' }}>OPTIMAL</span></div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>NETWORK STATUS: <span style={{ color: stats.status === 'OPTIMAL' ? 'var(--green)' : 'var(--red)' }}>{stats.status}</span></div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>COGNITIVE UPLINK: <span style={{ color: 'var(--cyan)' }}>ACTIVE</span></div>
         </div>
       </div>
@@ -56,8 +69,8 @@ export default function Dashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24, marginBottom: 48 }}>
         <StatCard icon="◈" label="NEURAL ANALYSES" value={stats.totalAnalyses} unit="+" color="var(--cyan)" trend={12.5} />
         <StatCard icon="∞" label="ACTIVE OPERATIVES" value={stats.totalUsers} color="var(--purple)" trend={5.2} delay={100} />
-        <StatCard icon="⚡" label="THROUGHPUT" value="98.4" unit="%" color="var(--green)" delay={200} />
-        <StatCard icon="◎" label="SYSTEM LATENCY" value="24" unit="ms" color="#ff00aa" delay={300} />
+        <StatCard icon="⚡" label="THROUGHPUT" value={stats.throughput} unit="%" color="var(--green)" delay={200} />
+        <StatCard icon="◎" label="SYSTEM LATENCY" value={stats.latency} unit="ms" color="#ff00aa" delay={300} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 32 }}>

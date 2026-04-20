@@ -42,3 +42,12 @@ verify_jwt = false
 
 [functions.chat]
 verify_jwt = false
+
+[functions.news-bias]
+verify_jwt = false
+
+[functions.bias-battle]
+verify_jwt = false
+
+[functions.bias-fingerprint]
+verify_jwt = false

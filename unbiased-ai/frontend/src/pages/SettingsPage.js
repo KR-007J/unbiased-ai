@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useStore } from '../store';
-import { updateProfile } from 'firebase/auth';
+import { signOut, updateProfile } from 'firebase/auth';
 import { auth } from '../firebase';
+import { api } from '../supabase';
+import { useStore } from '../store';
+import { useNavigate } from 'react-router-dom';
 import NeuralLinkStatus from '../components/NeuralLinkStatus';
 import CryptographicAuditTrail from '../components/CryptographicAuditTrail';
 import toast from 'react-hot-toast';
 
 export default function SettingsPage() {
+  const navigate = useNavigate();
   const user = useStore((s) => s.user);
   const analyses = useStore((s) => s.analyses);
   const setUser = useStore((s) => s.setUser);
@@ -45,6 +48,48 @@ export default function SettingsPage() {
       ),
     },
     {
+      title: 'PRIVACY & GDPR', icon: '🛡',
+      content: (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.6 }}>
+            In accordance with GDPR compliance, you can export your data or permanently delete your account and all associated analyses.
+          </p>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button className="btn-secondary" onClick={async () => {
+              toast.loading('Preparing data package...');
+              const res = await api.exportGDPRData();
+              if (res.error) toast.error(res.error);
+              else {
+                const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `unbiased-ai-data-${user.uid}.json`;
+                a.click();
+                toast.success('Data exported successfully');
+              }
+            }}>
+              EXPORT DATA (JSON)
+            </button>
+            <button className="btn-secondary" style={{ borderColor: 'rgba(255, 51, 102, 0.3)', color: '#ff3366' }} onClick={async () => {
+              if (window.confirm('WARNING: This will permanently delete all your analyses, messages, and account data. This action cannot be undone. Proceed?')) {
+                toast.loading('Purging data from sovereign core...');
+                const res = await api.deleteGDPRData();
+                if (res.error) toast.error(res.error);
+                else {
+                  toast.success('Data purged. Terminating session...');
+                  await signOut(auth);
+                  navigate('/');
+                }
+              }
+            }}>
+              PERMANENT PURGE
+            </button>
+          </div>
+        </div>
+      ),
+    },
+    {
       title: 'ABOUT UNBIASED AI', icon: '◈',
       content: (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -55,7 +100,7 @@ export default function SettingsPage() {
             ['ARCHITECTURE', 'SOVEREIGN NEURAL ARBITER v3.0'],
             ['CORE AI', 'GEMINI 1.5 PRO (GOD LEVEL)'],
             ['INFRASTRUCTURE', 'SUPABASE X FIREBASE HYBRID'],
-            ['COMPLIANCE', 'INSTITUTIONAL GRADE'],
+            ['COMPLIANCE', 'GDPR / SOC2 TYPE II'],
           ].map(([k, v]) => (
             <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>{k}</span>
