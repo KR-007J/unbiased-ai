@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useMemo } from 'react';
 import { trackPerformance, trackEvent, trackError } from '../utils/analytics';
 
 // Performance monitoring hook
@@ -38,10 +38,10 @@ export const usePerformanceMonitoring = (componentName) => {
     });
   }, [componentName]);
 
-  return {
+  return useMemo(() => ({
     trackInteraction,
     trackError: trackCompError,
-  };
+  }), [trackInteraction, trackCompError]);
 };
 
 // API call monitoring hook
@@ -80,7 +80,7 @@ export const useApiMonitoring = () => {
     }
   }, []);
 
-  return { trackApiCall };
+  return useMemo(() => ({ trackApiCall }), [trackApiCall]);
 };
 
 // User behavior tracking hook
@@ -125,10 +125,10 @@ export const useUserTracking = (pageName) => {
     });
   }, [pageName]);
 
-  return {
+  return useMemo(() => ({
     trackUserAction,
     trackFeatureUsage,
-  };
+  }), [trackUserAction, trackFeatureUsage]);
 };
 
 // Error boundary monitoring hook
@@ -141,7 +141,7 @@ export const useErrorMonitoring = (componentName) => {
     });
   }, [componentName]);
 
-  return { trackError: trackCompError };
+  return useMemo(() => ({ trackError: trackCompError }), [trackCompError]);
 };
 
 // Performance observer hook for Web Vitals
@@ -295,9 +295,9 @@ export const useMonitoring = (componentName, options = {}) => {
     userTracker.trackFeatureUsage(feature, context);
   }, [userTracker]);
 
-  return {
+  return useMemo(() => ({
     trackInteraction,
     trackComponentError,
     trackFeature,
-  };
+  }), [trackInteraction, trackComponentError, trackFeature]);
 };
