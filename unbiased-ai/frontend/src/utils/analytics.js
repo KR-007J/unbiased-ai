@@ -81,7 +81,10 @@ export const identifyUser = (userId, traits) => {
 
 // Event tracking
 export const trackEvent = (eventName, properties) => {
-  console.log('Tracked event:', eventName, properties);
+  // Console logging is disabled in production to optimize performance
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Tracked event:', eventName, properties);
+  }
 
   // Mixpanel
   if (process.env.REACT_APP_MIXPANEL_TOKEN) {

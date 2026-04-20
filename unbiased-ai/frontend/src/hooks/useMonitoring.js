@@ -13,12 +13,15 @@ export const usePerformanceMonitoring = (componentName) => {
     return () => {
       if (startTimeRef.current) {
         const duration = performance.now() - startTimeRef.current;
-        trackPerformance(`${componentName}_render_time`, duration, {
-          renderCount: renderCountRef.current,
-        });
+        // Only track performance for 10% of renders to avoid overloading
+        if (Math.random() < 0.1) {
+          trackPerformance(`${componentName}_render_time`, duration, {
+            renderCount: renderCountRef.current,
+          });
+        }
       }
     };
-  });
+  }, [componentName]);
 
   const trackInteraction = useCallback((action, details) => {
     trackEvent('component_interaction', {

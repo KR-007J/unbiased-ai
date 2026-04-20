@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-export default function StatCard({ icon, label, value, unit = '', color = 'var(--cyan)', trend, delay = 0 }) {
+const StatCard = React.memo(({ icon, label, value, unit = '', color = 'var(--cyan)', trend, delay = 0 }) => {
   const [displayed, setDisplayed] = useState(0);
   const [visible, setVisible] = useState(false);
   const ref = useRef(null);
@@ -86,4 +86,6 @@ export default function StatCard({ icon, label, value, unit = '', color = 'var(-
       }} />
     </div>
   );
-}
+});
+
+export default StatCard;

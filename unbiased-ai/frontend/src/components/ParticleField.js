@@ -9,7 +9,7 @@ export default function ParticleField() {
     let animId;
     let W, H;
 
-    const PARTICLE_COUNT = 120;
+    const PARTICLE_COUNT = 80;
     const particles = [];
 
     class Particle {
@@ -38,10 +38,7 @@ export default function ParticleField() {
         ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
         ctx.fillStyle = this.color;
         ctx.globalAlpha = a;
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = this.color;
         ctx.fill();
-        ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
       }
     }

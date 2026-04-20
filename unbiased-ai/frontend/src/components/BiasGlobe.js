@@ -3,7 +3,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Sphere, Float, Text } from '@react-three/drei';
 import * as THREE from 'three';
 
-function GlobeContent() {
+const GlobeContent = React.memo(() => {
   const globeRef = useRef();
   const dotsRef = useRef();
 
@@ -30,7 +30,7 @@ function GlobeContent() {
         )
       );
     }
-    return pts;
+    return new Float32Array(pts.flatMap((p) => [p.x, p.y, p.z]));
   }, []);
 
   return (
@@ -50,8 +50,8 @@ function GlobeContent() {
         <bufferGeometry>
           <bufferAttribute
             attach="attributes-position"
-            count={points.length}
-            array={new Float32Array(points.flatMap((p) => [p.x, p.y, p.z]))}
+            count={points.length / 3}
+            array={points}
             itemSize={3}
           />
         </bufferGeometry>
@@ -59,7 +59,7 @@ function GlobeContent() {
       </points>
 
       {/* Pulsing Hotspots (Simulated) */}
-      {[
+      {useMemo(() => [
         { pos: [1.5, 1.5, 1.2], color: '#ff00aa', label: 'Gender Bias Scan' },
         { pos: [-1.8, 0.5, 1.5], color: '#8b00ff', label: 'Political Delta' },
         { pos: [0.5, -2, 1], color: '#ff3366', label: 'Racial Anomaly' },
@@ -81,7 +81,7 @@ function GlobeContent() {
             {spot.label}
           </Text>
         </Float>
-      ))}
+      )), [])}
 
       {/* Atmospheric Ring */}
       <mesh rotation={[Math.PI / 2, 0, 0]}>
@@ -90,12 +90,12 @@ function GlobeContent() {
       </mesh>
     </group>
   );
-}
+});
 
-export default function BiasGlobe() {
+const BiasGlobe = React.memo(() => {
   return (
     <div style={{ width: '100%', height: '500px', cursor: 'grab' }}>
-      <Canvas camera={{ position: [0, 0, 8], fov: 45 }}>
+      <Canvas camera={{ position: [0, 0, 8], fov: 45 }} dpr={[1, 2]}>
         <ambientLight intensity={0.5} />
         <pointLight position={[10, 10, 10]} />
         <GlobeContent />
@@ -103,4 +103,6 @@ export default function BiasGlobe() {
       </Canvas>
     </div>
   );
-}
+});
+
+export default BiasGlobe;

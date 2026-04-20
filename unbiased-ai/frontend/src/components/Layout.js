@@ -23,14 +23,48 @@ const NAV = [
   { to: '/app/settings', label: 'CONFIG', icon: '⚙', desc: 'Settings' },
 ];
 
+const NavItem = React.memo(({ item, sidebarOpen, isMobile, toggleSidebar }) => {
+  return (
+    <NavLink to={item.to} end={item.end}
+      className={`nav-link-cyber ${!sidebarOpen && !isMobile ? 'tooltip-cyber' : ''}`}
+      data-tip={item.desc}
+      onClick={() => isMobile && sidebarOpen && toggleSidebar()}
+      style={({ isActive }) => ({
+        display: 'flex', alignItems: 'center', gap: 12,
+        padding: '12px 12px',
+        borderRadius: 10,
+        textDecoration: 'none',
+        fontFamily: 'var(--font-display)',
+        fontWeight: 600,
+        fontSize: 12,
+        letterSpacing: 2,
+        transition: 'all 0.2s ease',
+        color: isActive ? 'var(--cyan)' : 'inherit',
+        background: isActive ? 'rgba(0,245,255,0.08)' : 'transparent',
+        border: isActive ? '1px solid rgba(0,245,255,0.2)' : '1px solid transparent',
+        boxShadow: isActive ? 'inset 0 0 20px rgba(0,245,255,0.05)' : 'none',
+        overflow: 'hidden',
+        whiteSpace: 'nowrap',
+      })}>
+      <span style={{ fontSize: 16, flexShrink: 0, filter: 'drop-shadow(0 0 4px currentColor)' }}>{item.icon}</span>
+      {(sidebarOpen || (isMobile && sidebarOpen)) && <span>{item.label}</span>}
+    </NavLink>
+  );
+});
+
 export default function Layout() {
   const user = useStore((s) => s.user);
   const sidebarOpen = useStore((s) => s.sidebarOpen);
   const toggleSidebar = useStore((s) => s.toggleSidebar);
   const navigate = useNavigate();
-  const [hovered, setHovered] = useState(null);
   const isAnalyzing = useStore((s) => s.isAnalyzing);
-  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -98,32 +132,7 @@ export default function Layout() {
           overflowY: 'auto'
         }}>
           {NAV.map((item) => (
-            <NavLink key={item.to} to={item.to} end={item.end}
-              className={!sidebarOpen && !isMobile ? 'tooltip-cyber' : ''}
-              data-tip={item.desc}
-              onClick={() => isMobile && sidebarOpen && toggleSidebar()}
-              onMouseEnter={() => setHovered(item.to)}
-              onMouseLeave={() => setHovered(null)}
-              style={({ isActive }) => ({
-                display: 'flex', alignItems: 'center', gap: 12,
-                padding: '12px 12px',
-                borderRadius: 10,
-                textDecoration: 'none',
-                fontFamily: 'var(--font-display)',
-                fontWeight: 600,
-                fontSize: 12,
-                letterSpacing: 2,
-                transition: 'all 0.2s ease',
-                color: isActive ? 'var(--cyan)' : hovered === item.to ? 'var(--text-primary)' : 'var(--text-muted)',
-                background: isActive ? 'rgba(0,245,255,0.08)' : hovered === item.to ? 'rgba(255,255,255,0.04)' : 'transparent',
-                border: isActive ? '1px solid rgba(0,245,255,0.2)' : '1px solid transparent',
-                boxShadow: isActive ? 'inset 0 0 20px rgba(0,245,255,0.05)' : 'none',
-                overflow: 'hidden',
-                whiteSpace: 'nowrap',
-              })}>
-              <span style={{ fontSize: 16, flexShrink: 0, filter: 'drop-shadow(0 0 4px currentColor)' }}>{item.icon}</span>
-              {(sidebarOpen || (isMobile && sidebarOpen)) && <span>{item.label}</span>}
-            </NavLink>
+            <NavItem key={item.to} item={item} sidebarOpen={sidebarOpen} isMobile={isMobile} toggleSidebar={toggleSidebar} />
           ))}
         </nav>
 
