@@ -27,7 +27,7 @@
     "zustand": "^4.4.7",
     "@sentry/react": "^7.80.1",
     "@sentry/tracing": "^7.80.1",
-    "mixpanel": "^2.48.1",
+    "mixpanel-browser": "^2.48.1",
     "workbox-background-sync": "^7.0.0",
     "workbox-broadcast-update": "^7.0.0",
     "workbox-cacheable-response": "^7.0.0",

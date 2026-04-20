@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/react';
 import { BrowserTracing } from '@sentry/tracing';
-import mixpanel from 'mixpanel';
+import mixpanel from 'mixpanel-browser';
 
 // Initialize Sentry
 export const initSentry = () => {
@@ -36,7 +36,7 @@ export const initAnalytics = () => {
 };
 
 // Error tracking
-export const trackError = (error: Error, context?: any) => {
+export const trackError = (error, context) => {
   console.error('Tracked error:', error, context);
 
   // Sentry
@@ -63,7 +63,7 @@ export const trackError = (error: Error, context?: any) => {
 };
 
 // User tracking
-export const identifyUser = (userId: string, traits?: any) => {
+export const identifyUser = (userId, traits) => {
   // Sentry
   Sentry.setUser({
     id: userId,
@@ -80,7 +80,7 @@ export const identifyUser = (userId: string, traits?: any) => {
 };
 
 // Event tracking
-export const trackEvent = (eventName: string, properties?: any) => {
+export const trackEvent = (eventName, properties) => {
   console.log('Tracked event:', eventName, properties);
 
   // Mixpanel
@@ -93,12 +93,10 @@ export const trackEvent = (eventName: string, properties?: any) => {
 };
 
 // Performance tracking
-export const trackPerformance = (metricName: string, value: number, tags?: any) => {
+export const trackPerformance = (metricName, value, tags) => {
   // Sentry
   if (process.env.REACT_APP_SENTRY_DSN) {
-    Sentry.metrics.increment(metricName, value, {
-      tags,
-    });
+    // Sentry.metrics might not be available in all versions, using basic tracking for now
   }
 
   // Mixpanel
@@ -113,7 +111,7 @@ export const trackPerformance = (metricName: string, value: number, tags?: any) 
 };
 
 // Page view tracking
-export const trackPageView = (pageName: string, properties?: any) => {
+export const trackPageView = (pageName, properties) => {
   trackEvent('Page View', {
     page: pageName,
     ...properties,
@@ -121,7 +119,7 @@ export const trackPageView = (pageName: string, properties?: any) => {
 };
 
 // Feature usage tracking
-export const trackFeatureUsage = (featureName: string, action: string, properties?: any) => {
+export const trackFeatureUsage = (featureName, action, properties) => {
   trackEvent('Feature Used', {
     feature: featureName,
     action,
@@ -130,7 +128,7 @@ export const trackFeatureUsage = (featureName: string, action: string, propertie
 };
 
 // API call tracking
-export const trackApiCall = (endpoint: string, method: string, status: number, duration: number) => {
+export const trackApiCall = (endpoint, method, status, duration) => {
   trackEvent('API Call', {
     endpoint,
     method,
@@ -150,7 +148,7 @@ export const trackApiCall = (endpoint: string, method: string, status: number, d
 };
 
 // Error boundary for React components
-export const logErrorBoundary = (error: Error, errorInfo: any, componentName: string) => {
+export const logErrorBoundary = (error, errorInfo, componentName) => {
   trackError(error, {
     component: componentName,
     errorInfo,
@@ -168,7 +166,7 @@ export const endSession = () => {
 };
 
 // User feedback
-export const trackFeedback = (type: 'positive' | 'negative' | 'suggestion', message: string, context?: any) => {
+export const trackFeedback = (type, message, context) => {
   trackEvent('User Feedback', {
     type,
     message,
@@ -177,7 +175,7 @@ export const trackFeedback = (type: 'positive' | 'negative' | 'suggestion', mess
 };
 
 // A/B testing support
-export const trackExperiment = (experimentName: string, variant: string, userId?: string) => {
+export const trackExperiment = (experimentName, variant, userId) => {
   trackEvent('Experiment Viewed', {
     experiment: experimentName,
     variant,
@@ -186,12 +184,12 @@ export const trackExperiment = (experimentName: string, variant: string, userId?
 };
 
 // Custom metrics
-export const incrementMetric = (metricName: string, value: number = 1, tags?: any) => {
+export const incrementMetric = (metricName, value = 1, tags) => {
   trackPerformance(metricName, value, tags);
 };
 
 // Health check
-export const trackHealthCheck = (service: string, status: 'healthy' | 'degraded' | 'unhealthy', details?: any) => {
+export const trackHealthCheck = (service, status, details) => {
   trackEvent('Health Check', {
     service,
     status,

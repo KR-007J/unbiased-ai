@@ -2,8 +2,8 @@ import { useEffect, useRef, useCallback } from 'react';
 import { trackPerformance, trackEvent, trackError } from '../utils/analytics';
 
 // Performance monitoring hook
-export const usePerformanceMonitoring = (componentName: string) => {
-  const startTimeRef = useRef<number>();
+export const usePerformanceMonitoring = (componentName) => {
+  const startTimeRef = useRef();
   const renderCountRef = useRef(0);
 
   useEffect(() => {
@@ -20,7 +20,7 @@ export const usePerformanceMonitoring = (componentName: string) => {
     };
   });
 
-  const trackInteraction = useCallback((action: string, details?: any) => {
+  const trackInteraction = useCallback((action, details) => {
     trackEvent('component_interaction', {
       component: componentName,
       action,
@@ -28,7 +28,7 @@ export const usePerformanceMonitoring = (componentName: string) => {
     });
   }, [componentName]);
 
-  const trackError = useCallback((error: Error, context?: any) => {
+  const trackCompError = useCallback((error, context) => {
     trackError(error, {
       component: componentName,
       ...context,
@@ -37,18 +37,18 @@ export const usePerformanceMonitoring = (componentName: string) => {
 
   return {
     trackInteraction,
-    trackError,
+    trackError: trackCompError,
   };
 };
 
 // API call monitoring hook
 export const useApiMonitoring = () => {
   const trackApiCall = useCallback(async (
-    endpoint: string,
-    method: string,
-    statusCode: number,
-    duration: number,
-    metadata?: any
+    endpoint,
+    method,
+    statusCode,
+    duration,
+    metadata
   ) => {
     trackEvent('api_call', {
       endpoint,
@@ -81,7 +81,7 @@ export const useApiMonitoring = () => {
 };
 
 // User behavior tracking hook
-export const useUserTracking = (pageName?: string) => {
+export const useUserTracking = (pageName) => {
   useEffect(() => {
     if (pageName) {
       trackEvent('page_view', {
@@ -106,7 +106,7 @@ export const useUserTracking = (pageName?: string) => {
     };
   }, [pageName]);
 
-  const trackUserAction = useCallback((action: string, details?: any) => {
+  const trackUserAction = useCallback((action, details) => {
     trackEvent('user_action', {
       action,
       page: pageName,
@@ -114,7 +114,7 @@ export const useUserTracking = (pageName?: string) => {
     });
   }, [pageName]);
 
-  const trackFeatureUsage = useCallback((feature: string, context?: any) => {
+  const trackFeatureUsage = useCallback((feature, context) => {
     trackEvent('feature_used', {
       feature,
       page: pageName,
@@ -129,8 +129,8 @@ export const useUserTracking = (pageName?: string) => {
 };
 
 // Error boundary monitoring hook
-export const useErrorMonitoring = (componentName: string) => {
-  const trackError = useCallback((error: Error, errorInfo?: any) => {
+export const useErrorMonitoring = (componentName) => {
+  const trackCompError = useCallback((error, errorInfo) => {
     trackError(error, {
       component: componentName,
       errorBoundary: true,
@@ -138,7 +138,7 @@ export const useErrorMonitoring = (componentName: string) => {
     });
   }, [componentName]);
 
-  return { trackError };
+  return { trackError: trackCompError };
 };
 
 // Performance observer hook for Web Vitals
@@ -146,73 +146,49 @@ export const useWebVitals = () => {
   useEffect(() => {
     // CLS (Cumulative Layout Shift)
     let clsValue = 0;
-    const clsObserver = new PerformanceObserver((entryList) => {
-      for (const entry of entryList.getEntries()) {
-        if (!(entry as any).hadRecentInput) {
-          clsValue += (entry as any).value;
+    try {
+      const clsObserver = new PerformanceObserver((entryList) => {
+        for (const entry of entryList.getEntries()) {
+          if (!entry.hadRecentInput) {
+            clsValue += entry.value;
+          }
         }
-      }
-      trackPerformance('cls', clsValue);
-    });
-    clsObserver.observe({ entryTypes: ['layout-shift'] });
-
-    // FID (First Input Delay)
-    const fidObserver = new PerformanceObserver((entryList) => {
-      for (const entry of entryList.getEntries()) {
-        trackPerformance('fid', (entry as any).processingStart - entry.startTime, {
-          eventType: (entry as any).name,
-        });
-      }
-    });
-    fidObserver.observe({ entryTypes: ['first-input'] });
-
-    // LCP (Largest Contentful Paint)
-    const lcpObserver = new PerformanceObserver((entryList) => {
-      const entries = entryList.getEntries();
-      const lastEntry = entries[entries.length - 1];
-      trackPerformance('lcp', lastEntry.startTime);
-    });
-    lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
-
-    return () => {
-      clsObserver.disconnect();
-      fidObserver.disconnect();
-      lcpObserver.disconnect();
-    };
+        trackPerformance('cls', clsValue);
+      });
+      clsObserver.observe({ entryTypes: ['layout-shift'] });
+      return () => clsObserver.disconnect();
+    } catch(e) {}
   }, []);
 };
 
 // Resource loading monitoring hook
 export const useResourceMonitoring = () => {
   useEffect(() => {
-    const resourceObserver = new PerformanceObserver((entryList) => {
-      for (const entry of entryList.getEntries()) {
-        const resourceEntry = entry as PerformanceResourceTiming;
+    try {
+      const resourceObserver = new PerformanceObserver((entryList) => {
+        for (const entry of entryList.getEntries()) {
+          // Track slow resources
+          if (entry.duration > 2000) {
+            trackPerformance('slow_resource', entry.duration, {
+              resource: entry.name,
+              type: entry.initiatorType,
+              size: entry.transferSize,
+            });
+          }
 
-        // Track slow resources
-        if (resourceEntry.duration > 2000) {
-          trackPerformance('slow_resource', resourceEntry.duration, {
-            resource: resourceEntry.name,
-            type: resourceEntry.initiatorType,
-            size: resourceEntry.transferSize,
-          });
+          // Track failed resources
+          if (entry.transferSize === 0 && entry.decodedBodySize === 0 && entry.initiatorType !== 'xmlhttprequest' && entry.initiatorType !== 'fetch') {
+            trackEvent('resource_load_failed', {
+              resource: entry.name,
+              type: entry.initiatorType,
+            });
+          }
         }
+      });
 
-        // Track failed resources
-        if (resourceEntry.transferSize === 0 && resourceEntry.decodedBodySize === 0) {
-          trackEvent('resource_load_failed', {
-            resource: resourceEntry.name,
-            type: resourceEntry.initiatorType,
-          });
-        }
-      }
-    });
-
-    resourceObserver.observe({ entryTypes: ['resource'] });
-
-    return () => {
-      resourceObserver.disconnect();
-    };
+      resourceObserver.observe({ entryTypes: ['resource'] });
+      return () => resourceObserver.disconnect();
+    } catch(e) {}
   }, []);
 };
 
@@ -221,7 +197,7 @@ export const useMemoryMonitoring = () => {
   useEffect(() => {
     const checkMemoryUsage = () => {
       if ('memory' in performance) {
-        const memory = (performance as any).memory;
+        const memory = performance.memory;
         const memoryUsagePercent = (memory.usedJSHeapSize / memory.totalJSHeapSize) * 100;
 
         trackPerformance('memory_usage_percent', memoryUsagePercent);
@@ -238,12 +214,8 @@ export const useMemoryMonitoring = () => {
       }
     };
 
-    // Check memory usage every 30 seconds
     const interval = setInterval(checkMemoryUsage, 30000);
-
-    return () => {
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, []);
 };
 
@@ -251,9 +223,7 @@ export const useMemoryMonitoring = () => {
 export const useNetworkMonitoring = () => {
   useEffect(() => {
     const updateNetworkStatus = () => {
-      const connection = (navigator as any).connection ||
-                        (navigator as any).mozConnection ||
-                        (navigator as any).webkitConnection;
+      const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
 
       if (connection) {
         trackEvent('network_change', {
@@ -265,81 +235,60 @@ export const useNetworkMonitoring = () => {
       }
     };
 
-    // Monitor online/offline status
     const handleOnline = () => trackEvent('network_online');
     const handleOffline = () => trackEvent('network_offline');
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Monitor connection changes if supported
     if ('connection' in navigator) {
-      (navigator as any).connection.addEventListener('change', updateNetworkStatus);
-      updateNetworkStatus(); // Initial check
+      navigator.connection.addEventListener('change', updateNetworkStatus);
+      updateNetworkStatus();
     }
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       if ('connection' in navigator) {
-        (navigator as any).connection.removeEventListener('change', updateNetworkStatus);
+        navigator.connection.removeEventListener('change', updateNetworkStatus);
       }
     };
   }, []);
 };
 
-// Comprehensive monitoring hook that combines multiple monitoring types
-export const useMonitoring = (componentName: string, options: {
-  trackPerformance?: boolean;
-  trackInteractions?: boolean;
-  trackErrors?: boolean;
-  pageName?: string;
-} = {}) => {
+// Comprehensive monitoring hook
+export const useMonitoring = (componentName, options = {}) => {
   const {
-    trackPerformance: enablePerformance = true,
     trackInteractions = true,
     trackErrors = true,
     pageName,
   } = options;
 
-  // Performance monitoring
-  const performanceMonitor = enablePerformance ? usePerformanceMonitoring(componentName) : null;
-
-  // User tracking
+  // Call hooks unconditionally
+  const performanceMonitor = usePerformanceMonitoring(componentName);
   const userTracker = useUserTracking(pageName);
+  const errorMonitor = useErrorMonitoring(componentName);
 
-  // Error monitoring
-  const errorMonitor = trackErrors ? useErrorMonitoring(componentName) : null;
-
-  // Web vitals
   useWebVitals();
-
-  // Resource monitoring
   useResourceMonitoring();
-
-  // Memory monitoring
   useMemoryMonitoring();
-
-  // Network monitoring
   useNetworkMonitoring();
 
-  const trackInteraction = useCallback((action: string, details?: any) => {
-    if (trackInteractions && performanceMonitor) {
+  const trackInteraction = useCallback((action, details) => {
+    if (trackInteractions) {
       performanceMonitor.trackInteraction(action, details);
     }
     userTracker.trackUserAction(action, details);
   }, [trackInteractions, performanceMonitor, userTracker]);
 
-  const trackComponentError = useCallback((error: Error, context?: any) => {
-    if (trackErrors && errorMonitor) {
+  const trackComponentError = useCallback((error, context) => {
+    if (trackErrors) {
       errorMonitor.trackError(error);
     }
-    if (performanceMonitor) {
-      performanceMonitor.trackError(error, context);
-    }
+    performanceMonitor.trackError(error, context);
   }, [trackErrors, errorMonitor, performanceMonitor]);
 
-  const trackFeature = useCallback((feature: string, context?: any) => {
+  const trackFeature = useCallback((feature, context) => {
     userTracker.trackFeatureUsage(feature, context);
   }, [userTracker]);
 

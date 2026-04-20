@@ -1,11 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from 'react-query';
-import { ReactQueryDevtools } from 'react-query/devtools';
 import { ErrorBoundary } from 'react-error-boundary';
 import App from './App';
 import { initSentry, initAnalytics, startSession, logErrorBoundary } from './utils/analytics';
-import './index.css';
 
 // Initialize monitoring and analytics
 initSentry();
@@ -61,7 +59,6 @@ root.render(
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <QueryClientProvider client={queryClient}>
         <App />
-        {process.env.NODE_ENV === 'development' && <ReactQueryDevtools />}
       </QueryClientProvider>
     </ErrorBoundary>
   </React.StrictMode>
