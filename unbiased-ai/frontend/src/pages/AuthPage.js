@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   signInWithEmailAndPassword, createUserWithEmailAndPassword,
@@ -14,6 +14,39 @@ export default function AuthPage() {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('demo') === 'true') {
+      handleDemoLogin();
+    }
+  }, []);
+
+  const handleDemoLogin = async () => {
+    setLoading(true);
+    try {
+      // Pre-defined test account for judges
+      await signInWithEmailAndPassword(auth, 'judge@unbiased.ai', 'password123');
+      toast.success('Sovereign access granted. Welcome, Judge.');
+      navigate('/app');
+    } catch (err) {
+      // If the account doesn't exist, create it silently for the first time
+      if (err.code === 'auth/user-not-found') {
+        try {
+          const cred = await createUserWithEmailAndPassword(auth, 'judge@unbiased.ai', 'password123');
+          await updateProfile(cred.user, { displayName: 'System Judge' });
+          toast.success('Demo identity created. System online.');
+          navigate('/app');
+        } catch (cE) {
+          toast.error('Demo initialization failed.');
+        }
+      } else {
+        toast.error('Demo authentication protocol failed.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();

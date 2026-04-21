@@ -8,19 +8,14 @@ import ReactorLogo from './ReactorLogo';
 import { motion } from 'framer-motion';
 
 const NAV = [
-  { to: '/app', label: 'NEXUS', icon: '◈', end: true, desc: 'Dashboard' },
-  { to: '/app/analyze', label: 'SCAN', icon: '⬡', desc: 'Analyze Text' },
-  { to: '/app/compare', label: 'DELTA', icon: '⟺', desc: 'Compare Texts' },
-  { to: '/app/battle', label: 'BATTLE', icon: '⚔', desc: 'Bias Battle' },
-  { to: '/app/chat', label: 'ARBITER', icon: '💬', desc: 'Ethical Chat' },
-  { to: '/app/web-scan', label: 'SENTINEL', icon: '🌐', desc: 'Web Scanner' },
-  { to: '/app/news-bias', label: 'NEWS', icon: '📰', desc: 'News Bias Scanner' },
-  { to: '/app/fingerprint', label: 'FINGERPRINT', icon: '👁', desc: 'Bias Fingerprint' },
-  { to: '/app/community', label: 'NEXUS', icon: '👥', desc: 'Community Hub' },
-  { to: '/app/analytics', label: 'INSIGHTS', icon: '📊', desc: 'Analytics' },
-  { to: '/app/vision', label: 'VISION', icon: '◎', desc: 'Visual Bias' },
-  { to: '/app/history', label: 'ARCHIVE', icon: '≡', desc: 'History' },
-  { to: '/app/settings', label: 'CONFIG', icon: '⚙', desc: 'Settings' },
+  { to: '/app', label: 'DASHBOARD', icon: '◈', end: true, desc: 'System Overview' },
+  { to: '/app/analyze', label: 'SCAN', icon: '⬡', desc: 'Neural Text Analysis' },
+  { to: '/app/compare', label: 'DELTA', icon: '⟺', desc: 'Cross-Text Comparison' },
+  { to: '/app/chat', label: 'ARBITER', icon: '💬', desc: 'Neural Dialogue' },
+  { to: '/app/web-scan', label: 'SENTINEL', icon: '🌐', desc: 'Deep Web Scanner' },
+  { to: '/app/news-bias', label: 'WIRE', icon: '📰', desc: 'Real-time News Audit' },
+  { to: '/app/history', label: 'ARCHIVE', icon: '≡', desc: 'Audit History' },
+  { to: '/app/settings', label: 'CONFIG', icon: '⚙', desc: 'System Settings' },
 ];
 
 const NavItem = React.memo(({ item, sidebarOpen, isMobile, toggleSidebar }) => {
@@ -161,6 +156,17 @@ export default function Layout() {
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {user.email}
                   </div>
+                  {user.email === 'judge@unbiased.ai' && (
+                    <div style={{ 
+                      marginTop: 4, padding: '2px 8px', borderRadius: 4, 
+                      background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.4)',
+                      color: 'var(--gold)', fontSize: 9, fontFamily: 'var(--font-mono)',
+                      fontWeight: 700, letterSpacing: 1, textAlign: 'center',
+                      boxShadow: '0 0 10px rgba(255,215,0,0.2)'
+                    }}>
+                      JUDGE ACCESS
+                    </div>
+                  )}
                 </div>
               )}
             </div>

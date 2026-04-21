@@ -1,5 +1,15 @@
 import { jest } from '@jest/globals';
 
+import {
+  ContentValidators,
+  sanitizeRequestInput,
+  checkSuspiciousActivity,
+  analyzeContentSecurity,
+  getSecurityHeaders,
+  generateRequestFingerprint,
+  performSecurityCheck
+} from '../supabase/functions/_shared/validation.ts';
+
 // Mock Supabase client
 jest.mock('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => ({
@@ -20,16 +30,6 @@ jest.mock('@supabase/supabase-js', () => ({
     rpc: jest.fn(() => Promise.resolve({ data: null, error: null }))
   }))
 }));
-
-import {
-  ContentValidators,
-  sanitizeRequestInput,
-  checkSuspiciousActivity,
-  analyzeContentSecurity,
-  getSecurityHeaders,
-  generateRequestFingerprint,
-  performSecurityCheck
-} from '../supabase/functions/_shared/validation.ts';
 
 describe('Input Validation & Sanitization', () => {
   describe('ContentValidators.text', () => {

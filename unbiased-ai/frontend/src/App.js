@@ -37,7 +37,6 @@ function PrivateRoute({ children }) {
 
 export default function App() {
   const setUser = useStore((s) => s.setUser);
-  const user = useStore((s) => s.user);
   const { trackInteraction, trackComponentError } = useMonitoring('App', {
     trackPerformance: true,
     trackInteractions: true,

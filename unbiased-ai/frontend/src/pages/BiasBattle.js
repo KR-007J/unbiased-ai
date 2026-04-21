@@ -2,14 +2,13 @@ import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { LineWave } from 'react-loader-spinner';
 import BiasMeter from '../components/BiasMeter';
-import { supabase } from '../supabase';
+import { api } from '../supabase';
 
 export default function BiasBattle() {
   const [textA, setTextA] = useState('');
   const [textB, setTextB] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
-  const [activeTab, setActiveTab] = useState('battle');
 
   const runBattle = async () => {
     if (!textA.trim() || !textB.trim()) {
@@ -19,11 +18,9 @@ export default function BiasBattle() {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('bias-battle', {
-        body: { textA, textB }
-      });
+      const data = await api.call('bias-battle', { textA, textB });
 
-      if (error) throw error;
+      if (data.error) throw new Error(data.error);
       setResult(data);
       toast.success('Battle complete!');
     } catch (err) {

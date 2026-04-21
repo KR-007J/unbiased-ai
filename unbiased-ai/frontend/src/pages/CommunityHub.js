@@ -1,8 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase';
 import { useStore } from '../store';
 import toast from 'react-hot-toast';
-import { Trophy, Award, Zap, TrendingUp } from 'lucide-react';
+import { Trophy } from 'lucide-react';
+
+const getBadgeIcon = (badgeType) => {
+  const icons = {
+    'first_analysis': '🎯',
+    'bias_buster': '⚡',
+    '100_analyses': '💯',
+    'expert_contributor': '👑',
+    'leaderboard_top_10': '🏆',
+  };
+  return icons[badgeType] || '⭐';
+};
+
+const BADGE_INFO = {
+  'first_analysis': { name: 'First Step', description: 'Completed your first analysis' },
+  'bias_buster': { name: 'Bias Buster', description: 'Detected 10+ bias instances' },
+  '100_analyses': { name: 'Century', description: 'Completed 100 analyses' },
+  'expert_contributor': { name: 'Expert', description: 'Top 10 leaderboard rank' },
+  'leaderboard_top_10': { name: 'Elite', description: 'Ranked in top 10' },
+};
 
 export default function CommunityHub() {
   const user = useStore((s) => s.user);
@@ -12,11 +31,7 @@ export default function CommunityHub() {
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState('all-time'); // all-time | this-month
 
-  useEffect(() => {
-    loadData();
-  }, [user?.uid, selectedPeriod]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       // Load leaderboard
@@ -56,7 +71,11 @@ export default function CommunityHub() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.uid, selectedPeriod]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const getBadgeIcon = (badgeType) => {
     const icons = {

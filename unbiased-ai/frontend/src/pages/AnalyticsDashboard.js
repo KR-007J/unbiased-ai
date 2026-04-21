@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase';
 import { useStore } from '../store';
 import toast from 'react-hot-toast';
-import { LineChart, Line, PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, Target, Award, BarChart3 } from 'lucide-react';
 
 const BIAS_COLORS = {
@@ -31,13 +31,7 @@ export default function AnalyticsDashboard() {
     cleanContent: 0,
   });
 
-  useEffect(() => {
-    if (user?.uid) {
-      loadAnalytics();
-    }
-  }, [user?.uid]);
-
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     setLoading(true);
     try {
       // Fetch last 30 analyses
@@ -58,7 +52,13 @@ export default function AnalyticsDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (user?.uid) {
+      loadAnalytics();
+    }
+  }, [user?.uid, loadAnalytics]);
 
   const processAnalytics = (data) => {
     if (data.length === 0) {

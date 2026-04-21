@@ -85,11 +85,23 @@ export const createErrorResponse = (
       message: error,
     };
   } else if (error instanceof Error) {
+    // Check if it's a known Gemini error type
+    const isRateLimit = error.message.toLowerCase().includes('rate limit') || 
+                       error.message.includes('429') ||
+                       error.message.toLowerCase().includes('too many requests');
+    
+    const isOverloaded = error.message.toLowerCase().includes('overloaded') ||
+                        error.message.includes('503') ||
+                        error.message.toLowerCase().includes('service unavailable');
+
     apiError = {
-      code: ERROR_CODES.INTERNAL_ERROR,
+      code: isRateLimit ? ERROR_CODES.RATE_LIMIT_EXCEEDED : ERROR_CODES.INTERNAL_ERROR,
       message: error.message,
-      details: error.stack,
+      details: isOverloaded ? 'Gemini is currently experiencing high traffic' : error.stack,
     };
+    
+    if (isRateLimit) status = 429;
+    if (isOverloaded) status = 503;
   } else {
     apiError = error;
   }
@@ -145,41 +157,43 @@ export const handleError = async (
     timestamp,
   });
 
-  // Log to audit trail if Supabase is available
-  try {
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
-
-    if (SUPABASE_URL && SUPABASE_ANON_KEY && context.userId) {
-      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-      await supabase.from('audit_logs').insert({
-        user_id: context.userId,
-        action: context.action || 'error',
-        target_table: 'system',
-        changes: {
-          error: error.message,
-          context: context.additionalData,
-        },
-        status: 'error',
-        error_message: error.message,
-        timestamp,
-      });
-    }
-  } catch (auditError) {
-    console.warn('Failed to log audit trail:', auditError.message);
-  }
-
   // Return appropriate error response
-  if (error.message?.includes('rate limit')) {
-    return createRateLimitResponse();
+  const errorMessage = error.message?.toLowerCase() || '';
+  
+  if (errorMessage.includes('rate limit') || errorMessage.includes('429') || errorMessage.includes('too many requests')) {
+    return createRateLimitResponse(60);
   }
 
-  if (error.message?.includes('validation') || error.message?.includes('invalid')) {
+  if (errorMessage.includes('overloaded') || errorMessage.includes('503') || errorMessage.includes('service unavailable')) {
+    return createErrorResponse({
+      code: ERROR_CODES.GEMINI_API_ERROR,
+      message: 'Neural backend is currently overloaded. Retrying...',
+    }, 503);
+  }
+
+  if (errorMessage.includes('validation') || errorMessage.includes('invalid')) {
     return createValidationErrorResponse(error.details || error.message);
   }
 
   return createErrorResponse(error.message || 'Internal server error', 500);
+};
+
+// Return a full Response object from an ApiResponse
+export const createResponse = (apiResponse: ApiResponse, extraHeaders: Record<string, string> = {}): Response => {
+  return new Response(JSON.stringify(apiResponse), {
+    status: apiResponse.status,
+    headers: {
+      ...corsHeaders,
+      'Content-Type': 'application/json',
+      'X-Request-ID': apiResponse.requestId,
+      ...extraHeaders,
+    },
+  });
+};
+
+// Create a successful Response object
+export const successResponse = (data: any, meta?: Partial<ApiMeta>): Response => {
+  return createResponse(createSuccessResponse(data, meta));
 };
 
 // Input validation utilities

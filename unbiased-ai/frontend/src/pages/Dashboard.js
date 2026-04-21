@@ -7,10 +7,8 @@ import LiveAuditStream from '../components/LiveAuditStream';
 import { motion } from 'framer-motion';
 import { BIAS_CATEGORIES } from '../constants';
 import BiasGlobe from '../components/BiasGlobe';
-
 export default function Dashboard() {
   const [stats, setStats] = useState({ totalAnalyses: 1248, totalUsers: 582, globalBiasIndex: 0.62, latency: 24, throughput: 98.4, status: 'OPTIMAL' });
-  const [recentAnalyses, setRecentAnalyses] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -26,12 +24,6 @@ export default function Dashboard() {
     };
     fetchData();
     // Simulate real-time updates for news/fingerprint metrics in a real app
-    setRecentAnalyses([
-      { id: 1, type: 'News Scan', score: 0.15, text: 'Climate Reform Discourse', time: 'Just now' },
-      { id: 2, type: 'Battle', score: 0.22, text: 'Text A vs Text B', time: '5m ago' },
-      { id: 3, type: 'Fingerprint', score: 0.1, text: 'User Profile: Objective Observer', time: '12m ago' },
-      { id: 4, type: 'Political', score: 0.8, text: 'The Senator confirmed that the budget...', time: '1h ago' },
-    ]);
   }, []);
 
   return (

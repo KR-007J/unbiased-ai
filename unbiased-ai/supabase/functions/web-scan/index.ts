@@ -2,9 +2,10 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 const GEMINI_API_VERSION = 'v1'
-const GEMINI_MODEL = 'gemini-2.5-flash'
+const GEMINI_MODEL = 'gemini-1.5-flash'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+import { handleError, createResponse, handleCors, successResponse } from '../_shared/api.ts'
 
 const buildModelUrl = (): string => {
   return `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`
@@ -41,7 +42,8 @@ const extractTextFromHTML = (html: string): { title: string; content: string; me
 }
 
 serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  const corsResponse = handleCors(req)
+  if (corsResponse) return corsResponse
 
   try {
     const { url } = await req.json()
@@ -85,12 +87,9 @@ serve(async (req: Request) => {
       body: JSON.stringify({ url, url_hash: urlHash, bias_analysis: result, user_id: 'anonymous', created_at: new Date().toISOString() })
     })
 
-    return new Response(JSON.stringify({ success: true, url, cached: false, analysis: result }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    return successResponse({ success: true, url, cached: false, analysis: result })
   } catch (err: any) {
-    return new Response(JSON.stringify({ success: false, error: err.message }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    const errorResponse = await handleError(err, { action: 'web-scan' })
+    return createResponse(errorResponse)
   }
 })

@@ -15,6 +15,9 @@ const formatError = (status, message) => {
   if (status === 500) {
     return `Backend Error: ${message || 'API request failed. Check Supabase logs.'}`;
   }
+  if (status === 429) {
+    return 'High traffic detected. Retrying request...';
+  }
   if (status >= 400) {
     return `Error (${status}): ${message || 'Request failed'}`;
   }
@@ -23,20 +26,38 @@ const formatError = (status, message) => {
 
 // API helpers
 export const api = {
-  // Generic function invoker
-  async call(functionName, payload = {}) {
+  // Generic function invoker with retry logic
+  async call(functionName, payload = {}, retries = 3, backoff = 1000) {
     try {
       const { data, error } = await supabase.functions.invoke(functionName, {
-        body: payload
+        body: payload,
+        headers: apiHeaders,
       });
+
       if (error) {
+        // If it's a rate limit or transient error, retry
+        if (retries > 0 && (error.status === 429 || error.status >= 500)) {
+          const waitTime = backoff * (4 - retries);
+          console.warn(`Transient error calling ${functionName}. Retrying in ${waitTime}ms... (${retries} retries left)`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          return this.call(functionName, payload, retries - 1, backoff);
+        }
+        
+        const formattedMsg = formatError(error.status || 500, error.message);
         console.error(`Error calling ${functionName}:`, error);
-        return { error: error.message };
+        return { error: formattedMsg, status: error.status };
       }
+
       return data;
     } catch (err) {
+      if (retries > 0) {
+        const waitTime = backoff * (4 - retries);
+        console.warn(`Connection error calling ${functionName}. Retrying in ${waitTime}ms...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        return this.call(functionName, payload, retries - 1, backoff);
+      }
       console.error(`Failed to invoke ${functionName}:`, err);
-      return { error: err.message };
+      return { error: err.message, status: 500 };
     }
   },
 

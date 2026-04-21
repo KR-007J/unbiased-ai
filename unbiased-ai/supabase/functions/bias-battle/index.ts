@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 const GEMINI_API_VERSION = 'v1'
-const GEMINI_MODEL = 'gemini-2.5-flash'
+const GEMINI_MODEL = 'gemini-1.5-flash'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,9 +12,11 @@ const corsHeaders = {
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')
+import { handleError, createResponse, handleCors, successResponse } from '../_shared/api.ts'
 
 serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  const corsResponse = handleCors(req)
+  if (corsResponse) return corsResponse
 
   try {
     const { textA, textB, userId } = await req.json()
@@ -111,8 +113,8 @@ Respond ONLY with this JSON format:
     const supabase = (SUPABASE_URL && SUPABASE_ANON_KEY) ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
     if (supabase) {
       await supabase.from('bias_battles').insert({
-        text_a,
-        text_b,
+        text_a: textA,
+        text_b: textB,
         winner: result.winner,
         score_a: result.scoreA,
         score_b: result.scoreB,
@@ -121,14 +123,9 @@ Respond ONLY with this JSON format:
       }).catch(console.error);
     }
 
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    return successResponse(result)
   } catch (err: any) {
-    console.error('[Bias Battle Error]', err)
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    const errorResponse = await handleError(err, { action: 'bias-battle' })
+    return createResponse(errorResponse)
   }
 })

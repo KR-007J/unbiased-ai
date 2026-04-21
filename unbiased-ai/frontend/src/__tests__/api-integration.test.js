@@ -1,5 +1,7 @@
 import { jest } from '@jest/globals';
 
+import { createClient } from '@supabase/supabase-js';
+
 // Mock fetch globally
 global.fetch = jest.fn();
 
@@ -33,8 +35,6 @@ jest.mock('@supabase/supabase-js', () => ({
     }
   }))
 }));
-
-import { createClient } from '@supabase/supabase-js';
 
 describe('API Integration Tests', () => {
   beforeEach(() => {
