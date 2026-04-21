@@ -1,4 +1,4 @@
-# ⬡ UNBIASED AI — Sovereign Neural Governance Engine
+# ⬡ UNBIASED AI — Sovereign Neural Governance Engine https://unbiased-ai-krish-6789.web.app/auth
 ### Architect: [Krish Joshi](https://github.com/KR-007J) | Lead Partner: Gemini & Antigravity
 
 [![Deployment Status](https://img.shields.io/badge/Status-PRODUCTION--READY-brightgreen?style=for-the-badge)](https://unbiased-ai-krish-6789.web.app)
