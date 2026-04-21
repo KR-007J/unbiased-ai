@@ -18,9 +18,11 @@
 | [HACKATHON_REPLAN.md](./HACKATHON_REPLAN.md) | Comprehensive 3-tier improvement plan | 20 min |
 | [PROJECT_COMPLETION_SUMMARY.md](./PROJECT_COMPLETION_SUMMARY.md) | Final status & deployment checklist | 15 min |
 
-### Technical Documentation (For Devs)
+### Technical Documentation (For Evaluators & Devs)
 | Document | Purpose | Audience |
 |----------|---------|----------|
+| [HACKATHON_JUDGING_GUIDE.md](./HACKATHON_JUDGING_GUIDE.md) | **Score Multiplier & Verification** | **Judges** |
+| [AI_DOCS/PROMPTS.md](./AI_DOCS/PROMPTS.md) | **AI Strategy & Prompt Engineering** | **Judges/Eng** |
 | [README.md](./README.md) | Project overview & features | Everyone |
 | [API_DOCS.md](./API_DOCS.md) | Complete API reference | Developers |
 | [ARCHITECTURE_UPGRADE.md](./ARCHITECTURE_UPGRADE.md) | System design & scalability | Engineers |
