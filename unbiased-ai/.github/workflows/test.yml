@@ -67,7 +67,7 @@ jobs:
 
       - name: Build application
         working-directory: ./frontend
-        run: npm run build
+        run: GENERATE_SOURCEMAP=false npm run build
 
       - name: Analyze bundle size
         working-directory: ./frontend
@@ -197,7 +197,7 @@ jobs:
 
       - name: Build application
         working-directory: ./frontend
-        run: npm run build
+        run: GENERATE_SOURCEMAP=false npm run build
 
       - name: Run accessibility tests
         working-directory: ./frontend
@@ -227,7 +227,7 @@ jobs:
 
       - name: Build application
         working-directory: ./frontend
-        run: npm run build
+        run: GENERATE_SOURCEMAP=false npm run build
 
       - name: Performance testing with Lighthouse
         uses: treosh/lighthouse-ci-action@v10
@@ -262,7 +262,7 @@ jobs:
 
       - name: Build application
         working-directory: ./frontend
-        run: npm run build
+        run: GENERATE_SOURCEMAP=false npm run build
 
       - name: Run E2E tests with Playwright
         working-directory: ./frontend

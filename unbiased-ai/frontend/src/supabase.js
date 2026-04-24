@@ -166,15 +166,105 @@ RESPOND ONLY WITH A PURE JSON OBJECT:
   },
 
   async detectBias(content, type = 'text') {
-    return this.call('detect-bias', { content, type });
+    // Try direct Gemini first for robustness
+    try {
+      const geminiKey = process.env.REACT_APP_GEMINI_API_KEY;
+      if (!geminiKey || geminiKey === 'YOUR_GEMINI_API_KEY_HERE') throw new Error('No key');
+
+      const prompt = `Analyze this ${type} for bias. Respond with a brief JSON object containing score (0-1) and primary bias type.
+      
+      CONTENT:
+      """
+      ${content}
+      """`;
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 500 }
+        })
+      });
+
+      if (!response.ok) throw new Error('API failed');
+      const data = await response.json();
+      return JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text?.replace(/```json\n?|```/g, '') || '{}');
+    } catch (e) {
+      console.warn('Direct detectBias failed, trying Supabase:', e);
+      return this.call('detect-bias', { content, type });
+    }
   },
 
   async rewriteUnbiased(text, biasTypes = []) {
-    return this.call('rewrite', { text, biasTypes });
+    // Try direct Gemini first
+    try {
+      const geminiKey = process.env.REACT_APP_GEMINI_API_KEY;
+      if (!geminiKey || geminiKey === 'YOUR_GEMINI_API_KEY_HERE') throw new Error('No key');
+
+      const prompt = `Rewrite this text to be completely neutral and unbiased, addressing these vectors: ${biasTypes.join(', ')}.
+      
+      TEXT:
+      """
+      ${text}
+      """
+      
+      Respond only with the rewritten text.`;
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }]
+        })
+      });
+
+      if (!response.ok) throw new Error('API failed');
+      const data = await response.json();
+      return { rewrittenText: data.candidates?.[0]?.content?.parts?.[0]?.text || text };
+    } catch (e) {
+      console.warn('Direct rewrite failed, trying Supabase:', e);
+      return this.call('rewrite', { text, biasTypes });
+    }
   },
 
   async compareTexts(textA, textB) {
-    return this.call('compare', { textA, textB });
+    // Try direct Gemini first
+    try {
+      const geminiKey = process.env.REACT_APP_GEMINI_API_KEY;
+      if (!geminiKey || geminiKey === 'YOUR_GEMINI_API_KEY_HERE') throw new Error('No key');
+
+      const prompt = `Compare these two texts for bias.
+      
+      TEXT A:
+      """
+      ${textA}
+      """
+      
+      TEXT B:
+      """
+      ${textB}
+      """
+      
+      Respond with a JSON object comparing their scores and identifying the less biased one.`;
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 1000 }
+        })
+      });
+
+      if (!response.ok) throw new Error('API failed');
+      const data = await response.json();
+      const result = JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text?.replace(/```json\n?|```/g, '') || '{}');
+      return result;
+    } catch (e) {
+      console.warn('Direct compare failed, trying Supabase:', e);
+      return this.call('compare', { textA, textB });
+    }
   },
 
   async getChatResponse(conversationHistory, analysisId = null) {
@@ -276,7 +366,7 @@ Respond as the Sovereign Arbiter: Provide helpful, ethical guidance on bias dete
       const { data, error } = await supabase.from('messages').insert([{
         user_id: userId,
         role,
-        content,
+        message_content: content,
         analysis_id: analysisId,
       }]).select();
       if (error) throw error;

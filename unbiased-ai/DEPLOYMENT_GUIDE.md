@@ -113,7 +113,15 @@ bash deploy-backend.sh
    supabase functions deploy
    ```
 
-4. **Update Frontend .env**
+4. **Initialize Database Schema**
+   > [!IMPORTANT]
+   > This is required for History, Archive, and Chat features to work.
+   1. Open your Supabase Dashboard
+   2. Go to **SQL Editor** -> **New Query**
+   3. Copy the contents of `supabase/FINAL_DATABASE_SETUP.sql`
+   4. Paste into the editor and click **Run**
+
+5. **Update Frontend .env**
    ```
    REACT_APP_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
    REACT_APP_SUPABASE_ANON_KEY=your-anon-key-here
