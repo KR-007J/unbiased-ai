@@ -154,17 +154,6 @@ export default function Layout() {
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {user.email}
                   </div>
-                  {user.email === 'judge@unbiased.ai' && (
-                    <div style={{ 
-                      marginTop: 4, padding: '2px 8px', borderRadius: 4, 
-                      background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.4)',
-                      color: 'var(--gold)', fontSize: 9, fontFamily: 'var(--font-mono)',
-                      fontWeight: 700, letterSpacing: 1, textAlign: 'center',
-                      boxShadow: '0 0 10px rgba(255,215,0,0.2)'
-                    }}>
-                      JUDGE ACCESS
-                    </div>
-                  )}
                 </div>
               )}
             </div>

@@ -200,18 +200,6 @@ export default function LandingPage() {
             <button className="btn-primary" onClick={() => navigate('/auth')} style={{ fontSize: 15, padding: '16px 36px' }}>
               INITIALIZE SYSTEM
             </button>
-            <button 
-              className="btn-secondary" 
-              onClick={() => navigate('/auth?demo=true')} 
-              style={{ 
-                fontSize: 15, 
-                padding: '16px 36px',
-                border: '1px solid var(--gold)',
-                color: 'var(--gold)',
-              }}
-            >
-              JUDGE ACCESS
-            </button>
           </div>
 
           <div style={{
