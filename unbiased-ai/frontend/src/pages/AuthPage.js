@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   signInWithEmailAndPassword, createUserWithEmailAndPassword,
@@ -15,14 +15,7 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('demo') === 'true') {
-      handleDemoLogin();
-    }
-  }, []);
-
-  const handleDemoLogin = async () => {
+  const handleDemoLogin = useCallback(async () => {
     setLoading(true);
     try {
       // Pre-defined test account for judges
@@ -46,7 +39,14 @@ export default function AuthPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('demo') === 'true') {
+      handleDemoLogin();
+    }
+  }, [handleDemoLogin]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

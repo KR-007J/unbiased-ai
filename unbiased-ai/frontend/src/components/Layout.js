@@ -12,8 +12,6 @@ const NAV = [
   { to: '/app/analyze', label: 'SCAN', icon: '⬡', desc: 'Neural Text Analysis' },
   { to: '/app/compare', label: 'DELTA', icon: '⟺', desc: 'Cross-Text Comparison' },
   { to: '/app/chat', label: 'ARBITER', icon: '💬', desc: 'Neural Dialogue' },
-  { to: '/app/web-scan', label: 'SENTINEL', icon: '🌐', desc: 'Deep Web Scanner' },
-  { to: '/app/news-bias', label: 'WIRE', icon: '📰', desc: 'Real-time News Audit' },
   { to: '/app/history', label: 'ARCHIVE', icon: '≡', desc: 'Audit History' },
   { to: '/app/settings', label: 'CONFIG', icon: '⚙', desc: 'System Settings' },
 ];

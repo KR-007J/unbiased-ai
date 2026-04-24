@@ -1,31 +1,31 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import {
+  handleCors,
+  successResponse,
+  handleError,
+  createResponse,
+  validateUrl
+} from '../_shared/api.ts'
+import { withRateLimit } from '../_shared/rate-limit.ts'
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 const GEMINI_API_VERSION = 'v1'
 const GEMINI_MODEL = 'gemini-1.5-flash'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-import { handleError, createResponse, handleCors, successResponse } from '../_shared/api.ts'
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')
 
 const buildModelUrl = (): string => {
   return `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`
 }
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-// Helper to compute URL hash using built-in crypto
 const hashUrl = async (url: string): Promise<string> => {
   const msgUint8 = new TextEncoder().encode(url);
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  return hashHex;
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Helper to extract text from HTML
 const extractTextFromHTML = (html: string): { title: string; content: string; meta: Record<string, string> } => {
   const meta: Record<string, string> = {}
   const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i)
@@ -41,55 +41,71 @@ const extractTextFromHTML = (html: string): { title: string; content: string; me
   return { title, content, meta }
 }
 
-serve(async (req: Request) => {
+const handler = withRateLimit(async (req: Request) => {
   const corsResponse = handleCors(req)
   if (corsResponse) return corsResponse
 
+  const requestId = `webscan-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
   try {
     const { url } = await req.json()
-    if (!url || !url.startsWith('http')) throw new Error('Valid URL required')
+    const urlValidation = validateUrl(url)
+    if (!urlValidation.valid) throw new Error(urlValidation.error)
+    
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set')
 
     const urlHash = await hashUrl(url)
     console.log(`[WebScan] Processing: ${url}`)
 
-    // Check cache
-    const cachedResponse = await fetch(`${SUPABASE_URL}/rest/v1/web_scans?url_hash=eq.${urlHash}`, {
-      headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` }
-    })
-    const cachedData = await cachedResponse.json()
-    if (cachedData?.[0]) {
-      return new Response(JSON.stringify({ success: true, url, cached: true, analysis: cachedData[0].bias_analysis }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+    const supabase = (SUPABASE_URL && SUPABASE_ANON_KEY) ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+    
+    if (supabase) {
+      const { data: cached } = await supabase
+        .from('web_scans')
+        .select('bias_analysis')
+        .eq('url_hash', urlHash)
+        .single()
+      
+      if (cached) {
+        return successResponse({ url, cached: true, analysis: cached.bias_analysis })
+      }
     }
 
-    // Fetch and analyze
     const urlRes = await fetch(url)
+    if (!urlRes.ok) throw new Error(`Failed to fetch URL: ${urlRes.statusText}`)
+    
     const html = await urlRes.text()
-    const { title, content, meta } = extractTextFromHTML(html)
-    const prompt = `Analyze bias in this web content: TITLE: ${title}, CONTENT: ${content}. Respond in JSON with detected (bool), overallScore (0-1), biasInstances (array).`
+    const { title, content } = extractTextFromHTML(html)
+    const prompt = `Analyze bias in this web content: TITLE: ${title}, CONTENT: ${content}. Respond in JSON with: { "detected": bool, "overallScore": 0-1, "biasInstances": [] }`
 
     const geminiRes = await fetch(buildModelUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     })
+
+    if (!geminiRes.ok) throw new Error('Gemini API call failed')
+    
     const geminiData = await geminiRes.json()
     const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '{}'
     const cleaned = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     const result = JSON.parse(cleaned)
 
-    // Save cache
-    await fetch(`${SUPABASE_URL}/rest/v1/web_scans`, {
-      method: 'POST',
-      headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ url, url_hash: urlHash, bias_analysis: result, user_id: 'anonymous', created_at: new Date().toISOString() })
-    })
+    if (supabase) {
+      await supabase.from('web_scans').insert({
+        url,
+        url_hash: urlHash,
+        bias_analysis: result,
+        user_id: 'anonymous',
+        created_at: new Date().toISOString()
+      }).catch(err => console.error('[WebScan DB Error]', err))
+    }
 
-    return successResponse({ success: true, url, cached: false, analysis: result })
+    return successResponse({ url, cached: false, analysis: result })
   } catch (err: any) {
-    const errorResponse = await handleError(err, { action: 'web-scan' })
+    const errorResponse = await handleError(err, { action: 'web-scan', requestId })
     return createResponse(errorResponse)
   }
-})
+}, 'WEB_SCAN')
+
+serve(handler)

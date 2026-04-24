@@ -1,204 +1,83 @@
-# 🚀 Backend Integration - Quick Start Checklist
+# 🚀 Quick Start: Unbiased AI Sovereign Engine
 
-## What Was Fixed
-
-✅ **All backend functions now use:**
-- **Model**: `gemini-1.5-pro` (stable, production-ready)
-- **API Version**: `v1` (not `v1beta`)
-- **Proper Error Codes**: 500 for errors (not 200)
-- **Clear Error Messages**: Actionable debugging info
+Get the system running in under 5 minutes for your hackathon demo.
 
 ---
 
-## Deployment in 5 Minutes
+## 1. Environment Setup
 
-### Step 1: Get Gemini API Key
-1. Go to https://aistudio.google.com/app/apikey
-2. Click "Create API Key"
-3. Copy the key (starts with `AIza...`)
+The system is designed for "Instant Demo" mode. It will work with mock data out of the box, but requires a Gemini API key for real-time neural audits.
 
-### Step 2: Set Up Supabase Secret
-```bash
-supabase secrets set GEMINI_API_KEY="your-api-key-here"
-```
+### Create `frontend/.env`
+```env
+# Firebase Authentication
+REACT_APP_FIREBASE_API_KEY=AIzaSy...
+REACT_APP_FIREBASE_AUTH_DOMAIN=...
+REACT_APP_FIREBASE_PROJECT_ID=...
+REACT_APP_FIREBASE_STORAGE_BUCKET=...
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=...
+REACT_APP_FIREBASE_APP_ID=...
 
-**Or via Dashboard:**
-- Supabase → Settings → Secrets → Add Secret
-- Name: `GEMINI_API_KEY`
-- Value: Your API key
-
-### Step 3: Deploy Functions
-
-**Windows:**
-```bash
-.\deploy-backend.bat
-```
-
-**Mac/Linux:**
-```bash
-bash deploy-backend.sh
-```
-
-**Or manually:**
-```bash
-supabase functions deploy
-```
-
-### Step 4: Configure Frontend
-
-Create or update `frontend/.env.local`:
-```
-REACT_APP_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+# Supabase (Audit Archive & Delta Engine)
+REACT_APP_SUPABASE_URL=https://your-project.supabase.co
 REACT_APP_SUPABASE_ANON_KEY=your-anon-key
-REACT_APP_BACKEND_URL=https://YOUR_PROJECT.supabase.co/functions/v1
+
+# Neural Intelligence (REQUIRED for real AI)
+# Get from: https://aistudio.google.com/app/apikey
+REACT_APP_GEMINI_API_KEY=your-gemini-key
 ```
 
-Find these in Supabase Dashboard → Settings → API
+---
 
-### Step 5: Test
+## 2. Local Launch
 
 ```bash
 cd frontend
+npm install
 npm start
 ```
 
 ---
 
-## Verify It Works
+## 3. Demo Guide for Judges
 
-### Test 1: Check Secrets
+### Instant Access
+Use the **Demo Mode** to bypass setup:
+1. Visit the login page.
+2. Use the following credentials:
+   - **Email**: `judge@unbiased.ai`
+   - **Password**: `hackathon2026`
+3. Notice the **JUDGE ACCESS** badge in the sidebar.
+
+### Key Demo Flow
+1. **SCAN**: Paste biased text (e.g., *"The chairman led the meeting and he said..."*). Show the real-time detection highlights and neural refraction.
+2. **ARBITER**: Open the chat and ask: *"How can I make my corporate communications more inclusive?"*
+3. **DELTA**: Compare two similar news articles to see the variance in bias intensity.
+4. **ARCHIVE**: Show the persistent audit trail with neural signatures.
+
+---
+
+## 4. Troubleshooting
+
+### ❌ "Neural Uplink Failed"
+- **Cause**: Missing or invalid Gemini API key.
+- **Fix**: Check `REACT_APP_GEMINI_API_KEY` in `frontend/.env`.
+- **Demo Safety**: The system will automatically enter **Neural Simulation Mode** (Mock Data) so your demo never fails!
+
+### ❌ "Database Sync Failed"
+- **Cause**: Supabase connection issues.
+- **Fix**: Verify your Supabase URL and Anon Key. The core analysis will still work, but history won't save.
+
+---
+
+## 🚀 Deployment
+
+To push your optimized build to production:
 ```bash
-supabase secrets list
-# Should show: GEMINI_API_KEY=***
+cd frontend
+npm run build
+firebase deploy
 ```
 
-### Test 2: Check Deployments
-```bash
-supabase functions list
-# Should show all 5 functions as deployed
-```
-
-### Test 3: Test API Endpoint
-```bash
-curl -X POST https://YOUR_PROJECT.supabase.co/functions/v1/analyze \
-  -H "Content-Type: application/json" \
-  -d '{
-    "text": "Women are not good at math."
-  }'
-```
-
-**Expected Response:**
-```json
-{
-  "biasScore": 0.85,
-  "confidence": 0.92,
-  "biasTypes": {
-    "gender": 0.9,
-    "racial": 0.1,
-    ...
-  },
-  ...
-}
-```
-
----
-
-## Common Issues & Fixes
-
-### ❌ "GEMINI_API_KEY is not configured"
-- [ ] Did you run `supabase secrets set`?
-- [ ] Did you use the exact key from Google AI Studio?
-- [ ] Run `supabase secrets list` to verify
-
-### ❌ "Backend unavailable" in Frontend
-- [ ] Check `REACT_APP_BACKEND_URL` in `.env.local`
-- [ ] Did you run `supabase functions deploy`?
-- [ ] Check browser console for full error message
-
-### ❌ Response shows "Failed to parse JSON"
-- [ ] Gemini API quota exceeded
-- [ ] Check Google Cloud Console → Quotas
-- [ ] Wait a few minutes and retry
-
-### ❌ Functions won't deploy
-- [ ] Have you set the `GEMINI_API_KEY` secret first?
-- [ ] Is Supabase CLI updated? `npm install -g supabase@latest`
-- [ ] Run with verbose: `supabase functions deploy --debug`
-
----
-
-## Architecture Overview
-
-```
-Frontend (.env.local)
-    ↓
-Supabase Functions (v1 API)
-    ├─ /analyze
-    ├─ /detect-bias
-    ├─ /chat
-    ├─ /rewrite
-    └─ /compare
-    ↓
-Gemini 1.5 Pro API (v1)
-    ↓
-Bias Detection Response
-```
-
----
-
-## Files Modified
-
-**Backend (5 files)**:
-- ✅ `supabase/functions/analyze/index.ts`
-- ✅ `supabase/functions/detect-bias/index.ts`
-- ✅ `supabase/functions/chat/index.ts`
-- ✅ `supabase/functions/rewrite/index.ts`
-- ✅ `supabase/functions/compare/index.ts`
-
-**Frontend (1 file)**:
-- ✅ `frontend/src/supabase.js`
-
-**Documentation (4 files)**:
-- ✅ `BACKEND_SETUP.md` - Full setup guide
-- ✅ `BACKEND_FIXES.md` - What was fixed
-- ✅ `deploy-backend.sh` - Linux/Mac deployment
-- ✅ `deploy-backend.bat` - Windows deployment
-
----
-
-## Support Resources
-
-- **Gemini API Docs**: https://ai.google.dev/docs
-- **Supabase Docs**: https://supabase.com/docs
-- **Setup Guide**: See [BACKEND_SETUP.md](BACKEND_SETUP.md)
-- **What Changed**: See [BACKEND_FIXES.md](BACKEND_FIXES.md)
-
----
-
-## Performance Metrics
-
-| Metric | Before | After |
-|--------|--------|-------|
-| Model fallback loops | 3 attempts | 1 direct call |
-| API latency | 1-3 seconds | <1 second |
-| Error detection | Unreliable (200 status) | Reliable (500 status) |
-| Configuration overhead | High | Low |
-
----
-
-## Ready to Deploy? ✅
-
-```bash
-# 1. Set secret
-supabase secrets set GEMINI_API_KEY="your-key"
-
-# 2. Deploy
-supabase functions deploy
-
-# 3. Update frontend .env
-
-# 4. Test
-npm start
-```
-
-**That's it! Backend is now robust and production-ready.** 🎉
+**System Version**: 2.5 (Sovereign Layer)
+**Neural Core**: Gemini 1.5 Pro

@@ -1,32 +1,29 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import {
+  handleCors,
+  successResponse,
+  handleError,
+  createResponse,
+  validateContent
+} from '../_shared/api.ts'
+import { withRateLimit } from '../_shared/rate-limit.ts'
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 const GEMINI_API_VERSION = 'v1'
 const GEMINI_MODEL = 'gemini-1.5-flash'
-
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const buildModelUrl = (): string => {
+  return `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`
 }
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
-const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')
+const handler = withRateLimit(async (req: Request) => {
+  const corsResponse = handleCors(req)
+  if (corsResponse) return corsResponse
 
-const NEWS_SOURCES = [
-  { name: 'CNN', bias: 'left', url: 'https://www.cnn.com' },
-  { name: 'Fox News', bias: 'right', url: 'https://www.foxnews.com' },
-  { name: 'Reuters', bias: 'center', url: 'https://www.reuters.com' },
-  { name: 'AP News', bias: 'center', url: 'https://apnews.com' },
-  { name: 'BBC', bias: 'center-left', url: 'https://www.bbc.com/news' },
-]
-
-serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  const requestId = `news-bias-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
   try {
     const { topic } = await req.json()
@@ -70,9 +67,7 @@ Respond ONLY with this JSON format:
       generationConfig: { temperature: 0.3, maxOutputTokens: 2000, topP: 0.95 }
     }
 
-    const fetchUrl = `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`
-
-    const res = await fetch(fetchUrl, {
+    const res = await fetch(buildModelUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
@@ -94,23 +89,24 @@ Respond ONLY with this JSON format:
       throw new Error('Failed to parse Gemini response')
     }
 
-    const supabase = (SUPABASE_URL && SUPABASE_ANON_KEY) ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
-    if (supabase) {
+    // Optional: Save to database if configured
+    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
       await supabase.from('news_bias_analyses').insert({
         topic,
         analysis_data: result,
-        user_id: null // Can be updated if req includes auth
-      }).catch(console.error);
+        user_id: null 
+      }).catch(err => console.error('[News Bias DB Error]', err))
     }
 
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    return successResponse(result)
   } catch (err: any) {
-    console.error('[News Bias Analysis Error]', err)
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    const errorResponse = await handleError(err, {
+      action: 'news-bias',
+      requestId
     })
+    return createResponse(errorResponse)
   }
-})
+}, 'NEWS_BIAS')
+
+serve(handler)

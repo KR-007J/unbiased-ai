@@ -152,25 +152,32 @@ export const analyzeContentSecurity = (content: string): SecurityCheckResult => 
     recommendations: []
   };
 
-  // Check for SQL injection patterns
+  // Check for SQL injection patterns - refined to require more structure than just keywords
   const sqlPatterns = [
-    /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION)\b)/i,
-    /('|(\\x27)|(\\x2D\\x2D)|(\\#)|(\\/\\*.*\\*\\/))/,
-    /(\b(OR|AND)\b.*(=|>|<).*['"0-9])/i
+    /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION)\b.*\b(FROM|INTO|TABLE|SET)\b)/i,
+    /('OR'|'AND')\s+['"]?\d+['"]?\s*=\s*['"]?\d+['"]?/i,
+    /(;|--|\/\*|\*\/)/
   ];
 
   for (const pattern of sqlPatterns) {
     if (pattern.test(content)) {
-      result.passed = false;
-      result.score -= 25;
-      result.issues.push({
-        severity: 'high',
-        category: 'sql_injection',
-        description: 'Potential SQL injection detected',
-        impact: 'Database compromise possible',
-        remediation: 'Use parameterized queries and input sanitization'
-      });
-      break;
+      // Small penalty only if it's just one keyword, large if it looks like a query
+      const isLikelyQuery = content.length < 500 && pattern.test(content);
+      if (isLikelyQuery) {
+        result.passed = false;
+        result.score -= 25;
+        result.issues.push({
+          severity: 'high',
+          category: 'sql_injection',
+          description: 'Potential SQL injection detected',
+          impact: 'Database compromise possible',
+          remediation: 'Use parameterized queries and input sanitization'
+        });
+        break;
+      } else {
+        // Just a nudge for longer content that might contain these words naturally
+        result.score -= 5;
+      }
     }
   }
 
@@ -178,7 +185,7 @@ export const analyzeContentSecurity = (content: string): SecurityCheckResult => 
   const xssPatterns = [
     /<script[^>]*>.*?<\/script>/gi,
     /javascript:/gi,
-    /on\w+\s*=/gi,
+    /on\w+\s*=(['"]|&quot;).+?\1/gi, // Refined to look for event handlers with values
     /<iframe[^>]*>.*?<\/iframe>/gi,
     /<object[^>]*>.*?<\/object>/gi
   ];
@@ -197,11 +204,11 @@ export const analyzeContentSecurity = (content: string): SecurityCheckResult => 
     }
   }
 
-  // Check for command injection
+  // Check for command injection - refined
   const commandPatterns = [
-    /(\||&|;|\$\(|\`)/,
-    /\b(rm|del|format|shutdown|reboot)\b/i,
-    /(\.\.|\/etc\/|\/bin\/|\/usr\/)/
+    /(\||&|;|\$\(|\`)\s*(cat|ls|rm|sh|bash|powershell|curl|wget)\b/i,
+    /\b(rm -rf|format c:|del \/f)\b/i,
+    /(\/etc\/passwd|\/etc\/shadow|C:\\Windows\\System32)/i
   ];
 
   for (const pattern of commandPatterns) {

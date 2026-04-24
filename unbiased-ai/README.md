@@ -10,40 +10,33 @@
 
 ---
 
-## 🚀 Key Features (95% Completion ✅)
+## 🚀 Key Features (Hackathon Optimized ✅)
 
 | Feature | Description | Status |
 | :--- | :--- | :--- |
-| 🔍 **Bias Detection** | Real-time analysis across 8+ linguistic categories | ✅ Active |
-| 🖊️ **Neural Rewriting** | Bias neutralization while preserving semantic intent | ✅ Active |
-| 📊 **Comparative Engine** | Side-by-side holographic bias comparison | ✅ Active |
-| 🌐 **Sentinel Web Scan** | URL-based analysis with automated 24h caching | ✅ Active |
-| 🔮 **Trend Forecasting** | 30-day predictive bias analysis using neural modeling | ✅ Active |
-| 📦 **Batch Processing** | High-throughput analysis for 100+ concurrent items | ✅ Active |
-| 👥 **Community Hub** | Gamified leaderboards, badges, and user profiles | ✅ Active |
-| 🛡️ **Enterprise RBAC** | Multi-tenant Role-Based Access Control | ✅ Active |
+| 🔍 **Bias Scan** | Real-time analysis across 6+ linguistic categories using Gemini 1.5 Pro | ✅ Active |
+| 🖊️ **Neural Refraction** | Bias neutralization while preserving semantic intent | ✅ Active |
+| 📊 **Delta Compare** | Side-by-side holographic bias comparison of multiple texts | ✅ Active |
+| 💬 **Sovereign Arbiter** | Interactive AI dialogue for bias mitigation and ethical guidance | ✅ Active |
+| ≡ **Audit Archive** | Permanent record of all performed neural audits and refractions | ✅ Active |
+| ⚙️ **Neural Config** | System calibration and API integration management | ✅ Active |
 
 ---
 
 ## 🛠️ The God Stack (Technical Specifications)
 
 ### Frontend (User Experience Layer)
-- **Core**: [React 18](https://reactjs.org/) + [Vite](https://vitejs.dev/)
+- **Core**: [React 18](https://reactjs.org/) (CRA Infrastructure)
 - **State Management**: [Zustand](https://github.com/pmndrs/zustand) (Neural Store)
 - **Styling**: Cyber-Noir Glassmorphism (Vanilla CSS + Framer Motion)
 - **Visuals**: [Three.js](https://threejs.org/) Holographic Engine
 - **Testing**: [Jest](https://jestjs.io/) + [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
 
 ### Backend (Edge Reasoning Layer)
-- **Runtime**: [Supabase Edge Functions](https://supabase.com/docs/guides/functions) (Deno)
-- **Intelligence**: [Google Gemini 1.5 Pro](https://ai.google.dev/) (Multimodal AI)
-- **Serverless**: [Firebase Cloud Functions](https://firebase.google.com/docs/functions)
-- **Infrastructure**: Redis Caching + BullMQ (Message Queuing)
-
-### Persistence & Security
-- **Database**: [PostgreSQL](https://www.postgresql.org/) (via Supabase) with RLS (Row Level Security)
+- **Primary Intelligence**: [Google Gemini 1.5 Pro](https://ai.google.dev/) (Direct Frontend Uplink)
+- **Persistence**: [Supabase](https://supabase.com/) (PostgreSQL + Real-time)
 - **Auth**: Firebase Multi-Auth (OAuth, Email/Password)
-- **Compliance**: GDPR-ready data handling and Audit Logging
+- **Edge Logic**: Supabase Edge Functions (Deno)
 
 ---
 
@@ -57,13 +50,12 @@ graph TD
     end
     subgraph Auth_Governance
         A --> D[Firebase Multi-Auth]
-        D -.-> H[Secure RBAC Portal]
+        D -.-> H[Secure Judge Portal]
     end
     subgraph Neural_Edge
+        A --> F[Gemini 1.5 Pro Core]
         A --> E[Supabase Sentinel Edge]
-        E --> F[Gemini 1.5 Pro Core]
         E --> G[PostgreSQL Ledger]
-        E --> I[Redis Cache + BullMQ]
     end
 ```
 
@@ -71,11 +63,10 @@ graph TD
 
 ## 📈 Performance & Quality Metrics
 
-- **Test Coverage**: 85%+ (50+ Unit & Integration Tests)
 - **Avg. Response Time**: <1.5s for Real-time Bias Analysis
-- **Web Scan Latency**: <3s for deep URL crawls (cached <0.5s)
-- **Scalability**: Optimized for 1000+ concurrent neural operations
+- **Demo Stability**: Intelligent Mock Fallback system for offline/no-key usage
 - **UI Performance**: 90+ Lighthouse score across all core metrics
+- **Visuals**: GPU-accelerated 3D bias variance projections
 
 ---
 
@@ -83,15 +74,14 @@ graph TD
 
 ```text
 unbiased-ai/
-├── .github/workflows/   # CI/CD Pipelines (Test & Deploy)
-├── frontend/            # React + Vite Client
-│   ├── src/components/  # 15+ Reusable UI Components
-│   └── src/pages/       # Feature-specific views
+├── frontend/            # React Client
+│   ├── src/components/  # Cyber-noir UI Components
+│   ├── src/pages/       # Streamlined Feature Views
+│   └── src/supabase.js  # Neural Uplink & Gemini Logic
 ├── supabase/            # Backend Edge Functions
-│   └── functions/       # Business Logic (Bias Detection, Forecasting)
+│   └── functions/       # Core Logic (Rewrite, Compare)
 ├── tests/               # Global test suites (Jest)
-├── docs/                # Comprehensive technical documentation
-└── API_DOCS.md          # Full REST API Reference
+└── docs/                # Comprehensive technical documentation
 ```
 
 ---
@@ -101,40 +91,21 @@ unbiased-ai/
 ### 1. Environment Synthesis
 Create a `.env` in `frontend/` with:
 ```env
-VITE_FIREBASE_API_KEY=your_key
-VITE_SUPABASE_URL=your_url
-VITE_SUPABASE_ANON_KEY=your_key
+REACT_APP_FIREBASE_API_KEY=your_key
+REACT_APP_SUPABASE_URL=your_url
+REACT_APP_SUPABASE_ANON_KEY=your_key
+REACT_APP_GEMINI_API_KEY=your_key
 ```
 
 ### 2. Local Launch
 ```bash
-git clone https://github.com/KR-007J/unbiased-ai.git
-cd unbiased-ai/frontend
+cd frontend
 npm install
-npm run dev
+npm start
 ```
 
 ---
 
-## 📖 Complete Documentation Suite
-
-| Document | Purpose |
-|----------|---------|
-| [📖 API_DOCS.md](./API_DOCS.md) | REST API & WebSocket specifications |
-| [🏗️ ARCHITECTURE.md](./ARCHITECTURE_UPGRADE.md) | System design & scalability narrative |
-| [🚀 QUICK_START.md](./QUICK_START.md) | 5-minute development setup |
-| [🛠️ CONTRIBUTING.md](./CONTRIBUTING.md) | Pull request & coding standards |
-| [📊 FEATURE_MATRIX.md](./FEATURE_MATRIX.md) | Detailed capability breakdown |
-
----
-
-## 🤝 Support & Compliance
-
-- **Support**: support@unbiased-ai.dev
-- **License**: [Apache License 2.0](LICENSE)
-- **Security**: All data is encrypted in transit (HTTPS) and at rest (AWS/Google Cloud).
-
----
 ## 📄 License & Credits
 - **License**: [Apache License 2.0](LICENSE)
 - **Lead Architect**: **Krish Joshi**

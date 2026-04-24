@@ -1,15 +1,17 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import {
+  handleCors,
+  successResponse,
+  handleError,
+  createResponse,
+  validateContent
+} from '../_shared/api.ts'
+import { withRateLimit } from '../_shared/rate-limit.ts'
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 const GEMINI_API_VERSION = 'v1'
 const GEMINI_MODEL = 'gemini-1.5-flash'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')
 
@@ -21,8 +23,15 @@ const BIAS_PATTERNS = {
   loaded_words: ['radical', 'extreme', 'mainstream', 'elite', 'woke', 'cancel'],
 }
 
-serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+const buildModelUrl = (): string => {
+  return `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`
+}
+
+const handler = withRateLimit(async (req: Request) => {
+  const corsResponse = handleCors(req)
+  if (corsResponse) return corsResponse
+
+  const requestId = `fingerprint-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
   try {
     const { content, userId } = await req.json()
@@ -82,9 +91,7 @@ Respond ONLY with JSON:
       generationConfig: { temperature: 0.3, maxOutputTokens: 2000, topP: 0.95 }
     }
 
-    const fetchUrl = `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`
-
-    const res = await fetch(fetchUrl, {
+    const res = await fetch(buildModelUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
@@ -110,24 +117,24 @@ Respond ONLY with JSON:
     result.fingerprintId = crypto.randomUUID()
     result.timestamp = new Date().toISOString()
 
-    const supabase = (SUPABASE_URL && SUPABASE_ANON_KEY) ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
-    if (supabase) {
+    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
       await supabase.from('bias_fingerprints').insert({
         user_id: userId,
         fingerprint_data: result,
         archetype: result.fingerprint?.archetype,
         characteristics: result.characteristics
-      }).catch(console.error);
+      }).catch(err => console.error('[Fingerprint DB Error]', err))
     }
 
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    return successResponse(result)
   } catch (err: any) {
-    console.error('[Bias Fingerprint Error]', err)
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    const errorResponse = await handleError(err, {
+      action: 'bias-fingerprint',
+      requestId
     })
+    return createResponse(errorResponse)
   }
-})
+}, 'BIAS_FINGERPRINT')
+
+serve(handler)

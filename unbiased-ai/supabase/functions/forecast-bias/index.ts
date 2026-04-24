@@ -1,29 +1,36 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import {
+  handleCors,
+  successResponse,
+  handleError,
+  createResponse,
+  validateContent
+} from '../_shared/api.ts'
+import { withRateLimit } from '../_shared/rate-limit.ts'
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 const GEMINI_API_VERSION = 'v1'
 const GEMINI_MODEL = 'gemini-1.5-flash'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
 const buildModelUrl = (): string => {
   return `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`
 }
 
-serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+const handler = withRateLimit(async (req: Request) => {
+  const corsResponse = handleCors(req)
+  if (corsResponse) return corsResponse
+
+  const requestId = `forecast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
   try {
     const { topic, period = '30day', context = [] } = await req.json()
 
     if (!topic) {
-      return new Response(JSON.stringify({ error: 'Topic is required for forecasting' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+      throw new Error('Topic is required for forecasting')
+    }
+
+    if (!GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY is not configured')
     }
 
     console.log(`[ForecastBias] Forecasting for topic: ${topic}, period: ${period}`)
@@ -65,7 +72,8 @@ serve(async (req: Request) => {
     })
 
     if (!res.ok) {
-      throw new Error(`Gemini API error: ${res.status}`)
+      const errorData = await res.json().catch(() => ({ error: { message: res.statusText } }))
+      throw new Error(`Gemini API error: ${errorData.error?.message || res.statusText}`)
     }
 
     const data = await res.json()
@@ -74,20 +82,14 @@ serve(async (req: Request) => {
     
     const result = JSON.parse(cleaned)
 
-    return new Response(JSON.stringify({
-      success: true,
-      data: result
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    return successResponse(result)
   } catch (err: any) {
-    console.error('[ForecastBias Failure]', err)
-    return new Response(JSON.stringify({
-      success: false,
-      error: err.message || 'Failed to generate forecast'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    const errorResponse = await handleError(err, {
+      action: 'forecast-bias',
+      requestId
     })
+    return createResponse(errorResponse)
   }
-})
+}, 'FORECAST')
+
+serve(handler)

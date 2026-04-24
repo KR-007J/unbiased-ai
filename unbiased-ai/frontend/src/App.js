@@ -16,14 +16,7 @@ import ComparePage from './pages/ComparePage';
 import HistoryPage from './pages/HistoryPage';
 import SettingsPage from './pages/SettingsPage';
 import AuthPage from './pages/AuthPage';
-import VisionPage from './pages/VisionPage';
 import ChatPage from './pages/ChatPage';
-import WebScanPage from './pages/WebScanPage';
-import CommunityHub from './pages/CommunityHub';
-import AnalyticsDashboard from './pages/AnalyticsDashboard';
-import BiasBattle from './pages/BiasBattle';
-import NewsBiasPage from './pages/NewsBiasPage';
-import BiasFingerprintPage from './pages/BiasFingerprintPage';
 
 // Components
 import Layout from './components/Layout';
@@ -152,14 +145,7 @@ export default function App() {
             <Route path="analyze" element={<AnalyzePage />} />
             <Route path="compare" element={<ComparePage />} />
             <Route path="chat" element={<ChatPage />} />
-            <Route path="web-scan" element={<WebScanPage />} />
-            <Route path="community" element={<CommunityHub />} />
-            <Route path="analytics" element={<AnalyticsDashboard />} />
-            <Route path="battle" element={<BiasBattle />} />
-            <Route path="news-bias" element={<NewsBiasPage />} />
-            <Route path="fingerprint" element={<BiasFingerprintPage />} />
             <Route path="history" element={<HistoryPage />} />
-            <Route path="vision" element={<VisionPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>

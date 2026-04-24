@@ -62,7 +62,107 @@ export const api = {
   },
 
   async analyzeText(payload, options = {}) {
-    return this.call('analyze', typeof payload === 'string' ? { text: payload, ...options } : { ...payload, ...options });
+    const text = typeof payload === 'string' ? payload : payload.text;
+
+    // For hackathon demo, use direct Gemini API call
+    try {
+      const geminiKey = process.env.REACT_APP_GEMINI_API_KEY;
+      if (!geminiKey || geminiKey === 'YOUR_GEMINI_API_KEY_HERE') {
+        // For demo purposes, return mock data when API key not set
+        console.log('Using mock analysis data (API key not configured)');
+        return {
+          biasScore: Math.random() * 0.8,
+          confidence: 0.85 + Math.random() * 0.1,
+          biasTypes: {
+            gender: Math.random(),
+            racial: Math.random(),
+            political: Math.random(),
+            age: Math.random(),
+            cultural: Math.random(),
+            socioeconomic: Math.random()
+          },
+          biases: [
+            {
+              type: 'political',
+              text: text.substring(0, 50) + '...',
+              explanation: 'Detected potential political bias in language framing',
+              confidence: 0.75,
+              suggestion: 'Consider neutral language',
+              counterVector: 'Alternative perspective focusing on facts',
+              corroboratingTruth: 'Studies show political bias affects 60% of media content'
+            }
+          ],
+          summary: 'Analysis completed using neural simulation mode. Configure Gemini API key for real AI analysis.',
+          severity: 'medium',
+          propheticVector: 'Potential for increased polarization if unaddressed',
+          objectiveRefraction: text.replace(/political|bias/gi, 'neutral'),
+          neuralSignature: Math.random().toString(36).substring(2, 18)
+        };
+      }
+
+      const prompt = `You are the Sovereign Neural Arbiter. Analyze the following discourse for systemic, implicit, and institutional bias across gender, racial, political, age, cultural, and socioeconomic vectors.
+
+INPUT DATA:
+"""
+${text}
+"""
+
+RESPOND ONLY WITH A PURE JSON OBJECT:
+{
+  "biasScore": <number 0.0 to 1.0>,
+  "confidence": <number 0.0 to 1.0>,
+  "biasTypes": {
+    "gender": <0-1>, "racial": <0-1>, "political": <0-1>, "age": <0-1>, "cultural": <0-1>, "socioeconomic": <0-1>
+  },
+  "biases": [
+    {
+      "type": "gender|racial|political|age|cultural|socioeconomic",
+      "text": "<exact string from input>",
+      "explanation": "<logical analysis of the bias vector>",
+      "confidence": <0-1>,
+      "suggestion": "<unbiased alternative phrase>",
+      "counterVector": "<An opposing perspective>",
+      "corroboratingTruth": "<A factual data point>"
+    }
+  ],
+  "summary": "<2-3 sentence executive summary>",
+  "severity": "low|medium|high|critical",
+  "propheticVector": "<Prediction of impact>",
+  "objectiveRefraction": "<Surgically rewritten version>",
+  "neuralSignature": "<16-char hex proof>"
+}`;
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 3000, topP: 0.95 }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Gemini API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+      const cleaned = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+      let result;
+      try {
+        result = JSON.parse(cleaned);
+      } catch (e) {
+        console.error('Failed to parse Gemini response:', cleaned);
+        throw new Error('Failed to parse AI response');
+      }
+
+      return result;
+    } catch (error) {
+      console.warn('Direct Gemini call failed, trying Supabase:', error);
+      // Fallback to Supabase
+      return this.call('analyze', typeof payload === 'string' ? { text: payload, ...options } : { ...payload, ...options });
+    }
   },
 
   async detectBias(content, type = 'text') {
@@ -77,28 +177,64 @@ export const api = {
     return this.call('compare', { textA, textB });
   },
 
-  async scanWebUrl(url) {
-    return this.call('web-scan', { url });
-  },
-
   async getChatResponse(conversationHistory, analysisId = null) {
-    return this.call('chat', {
-      message: conversationHistory[conversationHistory.length - 1]?.content || '',
-      conversationHistory: conversationHistory.slice(0, -1),
-      analysisId,
-    });
-  },
+    const message = conversationHistory[conversationHistory.length - 1]?.content || '';
 
-  async forecastBias(topic, period = '30day', context = []) {
-    return this.call('forecast-bias', { topic, period, context });
-  },
+    try {
+      const geminiKey = process.env.REACT_APP_GEMINI_API_KEY;
+      if (!geminiKey || geminiKey === 'YOUR_GEMINI_API_KEY_HERE') {
+        // Mock chat response
+        return {
+          response: "I'm the Sovereign Arbiter. I notice you're exploring bias detection. To provide real AI assistance, please configure your Gemini API key in the settings. For now, here's some general guidance: Focus on using neutral language, consider multiple perspectives, and verify information with reliable sources.",
+          suggestions: [
+            "Use inclusive language that considers diverse viewpoints",
+            "Avoid absolute statements when possible",
+            "Consider the impact of your words on different audiences"
+          ]
+        };
+      }
 
-  async getNewsBias(topic) {
-    return this.call('news-bias', { topic });
-  },
+      const context = conversationHistory.slice(0, -1).map(m => `${m.role}: ${m.content}`).join('\n');
+      const prompt = `You are the Sovereign Arbiter - a specialized AI counselor focused on ethical governance and objective communication.
 
-  async getBiasFingerprint(content) {
-    return this.call('bias-fingerprint', { content });
+Context: ${context}
+
+User: ${message}
+
+Respond as the Sovereign Arbiter: Provide helpful, ethical guidance on bias detection and objective communication. Be empathetic, educational, and actionable.`;
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 1000, topP: 0.9 }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Gemini API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+      return {
+        response: rawText,
+        suggestions: [
+          "Consider multiple perspectives",
+          "Use evidence-based reasoning",
+          "Focus on inclusive language"
+        ]
+      };
+    } catch (error) {
+      console.warn('Direct Gemini chat call failed, trying Supabase:', error);
+      return this.call('chat', {
+        message: conversationHistory[conversationHistory.length - 1]?.content || '',
+        conversationHistory: conversationHistory.slice(0, -1),
+        analysisId,
+      });
+    }
   },
 
   async getSystemHealth() {
