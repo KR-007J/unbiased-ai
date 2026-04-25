@@ -16,6 +16,7 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const setUser = useStore((s) => s.setUser);
+  const setAuthReady = useStore((s) => s.setAuthReady);
 
   const enterDemoMode = () => {
     setUser({
@@ -24,6 +25,7 @@ export default function AuthPage() {
       displayName: 'Local Operator',
       isDemo: true,
     });
+    setAuthReady(true);
     toast.success('Local mode enabled');
     navigate('/app');
   };

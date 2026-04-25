@@ -5,6 +5,7 @@ export const useStore = create(
   persist(
     (set, get) => ({
       user: null,
+      authReady: false,
       theme: 'dark',
       analyses: [],
       currentAnalysis: null,
@@ -19,6 +20,7 @@ export const useStore = create(
       isStreaming: false,
 
       setUser: (user) => set({ user }),
+      setAuthReady: (authReady) => set({ authReady }),
       setTheme: (theme) => set({ theme }),
       setAnalyses: (analyses) => set({ analyses }),
       setCurrentAnalysis: (a) => set({ currentAnalysis: a }),

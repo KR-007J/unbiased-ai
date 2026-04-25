@@ -5,26 +5,26 @@ const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
-const createNoopSupabaseClient = () => ({
-  functions: {
-    invoke: async () => ({
-      data: null,
-      error: { message: 'Supabase is not configured', status: 503 },
-    }),
-  },
-  from: () => ({
-    select: () => ({
-      eq: () => ({
-        order: () => ({
-          limit: async () => ({ data: [], error: null }),
-        }),
+const createNoopSupabaseClient = () => {
+  const chainable = {
+    select: () => chainable,
+    eq: () => chainable,
+    order: () => chainable,
+    limit: () => chainable,
+    delete: () => chainable,
+    insert: () => chainable,
+    then: (resolve) => resolve({ data: [], error: null })
+  };
+  return {
+    functions: {
+      invoke: async () => ({
+        data: null,
+        error: { message: 'Supabase is not configured', status: 503 },
       }),
-    }),
-    insert: () => ({
-      select: async () => ({ data: [], error: { message: 'Supabase is not configured' } }),
-    }),
-  }),
-});
+    },
+    from: () => chainable,
+  };
+};
 
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey)

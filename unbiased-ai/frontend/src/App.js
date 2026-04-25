@@ -21,11 +21,29 @@ const CustomCursor = lazy(() => import('./components/CustomCursor'));
 
 function PrivateRoute({ children }) {
   const user = useStore((s) => s.user);
+  const authReady = useStore((s) => s.authReady);
+
+  if (!authReady) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'grid',
+        placeItems: 'center',
+        color: 'var(--text-secondary)',
+        fontFamily: 'var(--font-mono)',
+        letterSpacing: 2,
+      }}>
+        LOADING SESSION...
+      </div>
+    );
+  }
+
   return user ? children : <Navigate to="/auth" replace />;
 }
 
 export default function App() {
   const setUser = useStore((s) => s.setUser);
+  const setAuthReady = useStore((s) => s.setAuthReady);
   const { trackInteraction, trackComponentError } = useMonitoring('App', {
     trackPerformance: true,
     trackInteractions: true,
@@ -35,12 +53,14 @@ export default function App() {
   useEffect(() => {
     if (!isFirebaseConfigured || !auth) {
       setUser(null);
+      setAuthReady(true);
       trackEvent('auth_unavailable', { provider: 'firebase' });
       return undefined;
     }
 
     const unsub = onAuthStateChanged(auth, (user) => {
       setUser(user ? { uid: user.uid, email: user.email, displayName: user.displayName, photoURL: user.photoURL } : null);
+      setAuthReady(true);
 
       if (user) {
         identifyUser(user.uid, {
@@ -65,7 +85,7 @@ export default function App() {
     });
 
     return unsub;
-  }, [setUser, trackInteraction]);
+  }, [setUser, setAuthReady, trackInteraction]);
 
   useEffect(() => {
     const handleUnhandledError = (event) => {
