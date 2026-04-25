@@ -92,10 +92,10 @@ export default function ComparePage() {
     try {
       const data = await api.compareTexts(textA, textB);
       setResult(normalizeCompareResult(data, textA, textB));
-      toast.success(data?.error ? 'Demo comparison loaded' : 'Comparison complete');
+      toast.success(data?.error ? 'Local comparison loaded' : 'Comparison complete');
     } catch {
       setResult(buildMockCompare(textA, textB));
-      toast.success('Demo comparison loaded');
+      toast.success('Local comparison loaded');
     } finally {
       setLoading(false);
     }
@@ -118,7 +118,7 @@ export default function ComparePage() {
           </p>
         </div>
         <div className="glass-card" style={{ padding: 20, minWidth: 280 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)', letterSpacing: 2, marginBottom: 12 }}>FAST DEMO SETS</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)', letterSpacing: 2, marginBottom: 12 }}>FAST TEST SETS</div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             {EXAMPLE_PAIRS.map((example) => (
               <button

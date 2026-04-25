@@ -74,7 +74,6 @@ const GlobeContent = React.memo(() => {
             position={[spot.pos[0] * 1.2, spot.pos[1] * 1.2, spot.pos[2] * 1.2]}
             fontSize={0.1}
             color="white"
-            font="/fonts/Inter-Bold.woff"
             anchorX="center"
             anchorY="middle"
           >

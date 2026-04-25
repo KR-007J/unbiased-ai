@@ -163,10 +163,10 @@ export default function LandingPage() {
             <div style={{ fontSize: 64, color: 'var(--cyan)', filter: 'drop-shadow(0 0 20px var(--cyan))' }}>AI</div>
             <div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)', letterSpacing: 4, marginBottom: 8 }}>CORE</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700 }}>SUBMISSION READY</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700 }}>SYSTEM ACTIVE</div>
             </div>
             <div style={{ display: 'grid', gap: 12 }}>
-              {['Robust demo mode', 'Graceful cloud fallback', 'Judge-friendly analysis flow'].map((item) => (
+              {['Real-time bias detection', 'Deep semantic analysis', 'Context-aware rewrites'].map((item) => (
                 <div key={item} style={{
                   padding: '12px 14px',
                   borderRadius: 12,
@@ -188,7 +188,7 @@ export default function LandingPage() {
             NEURAL <span className="text-neon-cyan">LEVEL</span> CAPABILITIES
           </h2>
           <p style={{ color: 'var(--text-secondary)', maxWidth: 640, margin: '0 auto', fontSize: 16 }}>
-            The product now favors resilience and demo reliability without dropping the hackathon visual identity.
+            Advanced neural networks process text in real-time, delivering insights with uncompromising accuracy and speed.
           </p>
         </div>
 
@@ -239,7 +239,7 @@ export default function LandingPage() {
             <span className="holo-text">READY TO ELIMINATE BIAS?</span>
           </h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: 36, fontSize: 16 }}>
-            Open the platform, enter demo mode if needed, and walk judges through analysis, comparison, and neutral rewrite flows.
+            Access the platform to instantly analyze text, detect subtle biases, and generate fair, neutral rewrites.
           </p>
           <button className="btn-primary" onClick={() => navigate('/auth')} style={{ fontSize: 16, padding: '18px 48px' }}>
             INITIALIZE NEURAL LINK

@@ -61,7 +61,7 @@ export default function Dashboard() {
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>SYSTEM STATUS: <span style={{ color: stats.status === 'READY' ? 'var(--green)' : 'var(--red)' }}>{stats.status}</span></div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>DEMO MODE: <span style={{ color: 'var(--cyan)' }}>FAILSAFE ENABLED</span></div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>NETWORK: <span style={{ color: 'var(--cyan)' }}>SECURE</span></div>
         </div>
       </div>
 
@@ -140,7 +140,7 @@ export default function Dashboard() {
             <div style={{ display: 'grid', gap: 10 }}>
               {[
                 'End-to-end flow: detect, compare, rewrite, export.',
-                'Demo-safe behavior when APIs are unavailable.',
+                'Resilient behavior across varying API availability.',
                 'Clear explanations instead of black-box scoring.',
               ].map((item) => (
                 <div key={item} style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>

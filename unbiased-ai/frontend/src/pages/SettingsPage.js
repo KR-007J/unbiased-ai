@@ -50,7 +50,7 @@ export default function SettingsPage() {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `unbiased-ai-data-${user?.uid || 'demo-user'}.json`;
+    link.download = `unbiased-ai-data-${user?.uid || 'local-user'}.json`;
     link.click();
     toast.success('Data exported successfully');
   };
@@ -88,7 +88,7 @@ export default function SettingsPage() {
           </div>
           <div>
             <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: 2, display: 'block', marginBottom: 8 }}>EMAIL</label>
-            <input className="input-cyber" value={user?.email || 'demo@unbiased.ai'} disabled style={{ opacity: 0.5 }} />
+            <input className="input-cyber" value={user?.email || 'local@unbiased.ai'} disabled style={{ opacity: 0.5 }} />
           </div>
           <button className="btn-primary" onClick={saveProfile} disabled={saving} style={{ alignSelf: 'flex-start' }}>
             {saving ? 'SAVING...' : 'SAVE PROFILE'}
@@ -102,7 +102,7 @@ export default function SettingsPage() {
       content: (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <p style={{ color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.6 }}>
-            Export your data package for transparency or clear the current session before a live demo.
+            Export your data package for transparency or clear the current session before a new testing session.
           </p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <button className="btn-secondary" onClick={handleExport}>
@@ -116,7 +116,7 @@ export default function SettingsPage() {
       ),
     },
     {
-      title: 'HACKATHON POSITIONING',
+      title: 'SYSTEM OVERVIEW',
       icon: 'GO',
       content: (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -124,7 +124,7 @@ export default function SettingsPage() {
             ['PROBLEM', 'Biased communication is hard to spot, harder to explain, and slow to correct.'],
             ['SOLUTION', 'Unbiased AI detects bias, explains the issue, compares alternatives, and rewrites content neutrally.'],
             ['WHY IT MATTERS', 'This makes AI safety and fairness visible to writers, teams, reviewers, and judges.'],
-            ['DEMO STRENGTH', 'The product remains usable even when live cloud services are unavailable.'],
+            ['OFFLINE RESILIENCE', 'The product remains usable even when live cloud services are unavailable.'],
           ].map(([k, v]) => (
             <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 24, padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', minWidth: 130 }}>{k}</span>
@@ -148,7 +148,7 @@ export default function SettingsPage() {
           SETTINGS
         </h1>
         <p style={{ marginTop: 12, maxWidth: 660, color: 'var(--text-secondary)', lineHeight: 1.7 }}>
-          Keep the product ready for a live demo: identity, data controls, and the one-line story judges should remember.
+          Configure your neural identity and manage data privacy controls.
         </p>
       </div>
 
