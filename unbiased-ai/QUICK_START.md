@@ -51,9 +51,8 @@ Use the **Demo Mode** to bypass setup:
 
 ### Key Demo Flow
 1. **SCAN**: Paste biased text (e.g., *"The chairman led the meeting and he said..."*). Show the real-time detection highlights and neural refraction.
-2. **ARBITER**: Open the chat and ask: *"How can I make my corporate communications more inclusive?"*
-3. **DELTA**: Compare two similar news articles to see the variance in bias intensity.
-4. **ARCHIVE**: Show the persistent audit trail with neural signatures.
+2. **DELTA**: Compare two similar news articles to see the variance in bias intensity.
+3. **ARCHIVE**: Show the persistent audit trail with neural signatures.
 
 ---
 

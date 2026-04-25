@@ -1,115 +1,127 @@
-# ⬡ UNBIASED AI — Sovereign Neural Governance Engine
-### Architect: [Krish Joshi](https://github.com/KR-007J) | Lead Partner: Gemini & Antigravity
+# Unbiased AI
 
-[![Deployment Status](https://img.shields.io/badge/Status-PRODUCTION--READY-brightgreen?style=for-the-badge)](https://unbiased-ai-krish-6789.web.app)
-[![Neural Engine](https://img.shields.io/badge/Neural_Engine-Gemini_1.5_Pro-blue?style=for-the-badge)](https://ai.google.dev)
-[![Enterprise Ready](https://img.shields.io/badge/Enterprise-Ready-gold?style=for-the-badge)](#-enterprise-architecture)
-[![License](https://img.shields.io/badge/License-Apache_2.0-purple?style=for-the-badge)](LICENSE)
+Bias detection, explanation, comparison, and neutral rewrite in one workflow.
 
-**Unbiased AI** is a Sovereign Operating System for Information Governance. Engineered for the Google Developer Hackathon 2026, it leverages the multimodal power of **Gemini 1.5 Pro** to detect, forecast, and neutralize human bias in real-time.
+## What It Does
 
----
+Unbiased AI helps users:
+- detect biased or loaded language
+- explain why the wording is risky
+- compare two versions side by side
+- rewrite content into a more neutral form
+- export audit-style outputs for review
 
-## 🚀 Key Features (Hackathon Optimized ✅)
+This project was built as a Google hackathon submission and optimized for live demos. If Firebase, Supabase, or Gemini are not fully configured, the app now falls back gracefully into demo-safe mode instead of failing.
 
-| Feature | Description | Status |
-| :--- | :--- | :--- |
-| 🔍 **Bias Scan** | Real-time analysis across 6+ linguistic categories using Gemini 1.5 Pro | ✅ Active |
-| 🖊️ **Neural Refraction** | Bias neutralization while preserving semantic intent | ✅ Active |
-| 📊 **Delta Compare** | Side-by-side holographic bias comparison of multiple texts | ✅ Active |
-| 💬 **Sovereign Arbiter** | Interactive AI dialogue for bias mitigation and ethical guidance | ✅ Active |
-| ≡ **Audit Archive** | Permanent record of all performed neural audits and refractions | ✅ Active |
-| ⚙️ **Neural Config** | System calibration and API integration management | ✅ Active |
+## Why It Matters
 
----
+Most tools stop at a score. This project goes further:
+- `Detect`: identify bias categories and severity
+- `Explain`: show findings and confidence
+- `Compare`: prove which version is more neutral
+- `Rewrite`: generate a cleaner alternative
+- `Audit`: preserve outputs for review and export
 
-## 🛠️ The God Stack (Technical Specifications)
+That makes the product useful for education, content moderation, writing assistance, policy review, newsroom workflows, and AI safety demos.
 
-### Frontend (User Experience Layer)
-- **Core**: [React 18](https://reactjs.org/) (CRA Infrastructure)
-- **State Management**: [Zustand](https://github.com/pmndrs/zustand) (Neural Store)
-- **Styling**: Cyber-Noir Glassmorphism (Vanilla CSS + Framer Motion)
-- **Visuals**: [Three.js](https://threejs.org/) Holographic Engine
-- **Testing**: [Jest](https://jestjs.io/) + [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
+## Demo Flow
 
-### Backend (Edge Reasoning Layer)
-- **Primary Intelligence**: [Google Gemini 1.5 Pro](https://ai.google.dev/) (Direct Frontend Uplink)
-- **Persistence**: [Supabase](https://supabase.com/) (PostgreSQL + Real-time)
-- **Auth**: Firebase Multi-Auth (OAuth, Email/Password)
-- **Edge Logic**: Supabase Edge Functions (Deno)
+For a 2-minute live demo:
+1. Open the dashboard and state the product in one line: "It detects bias, explains it, and rewrites content neutrally."
+2. Go to `Analyze` and run one of the built-in examples.
+3. Show the explanation, confidence, and neutral rewrite.
+4. Go to `Compare` and load a demo pair to show why one version is safer.
+5. Export the report PDF.
 
----
+## Core Features
 
-## 🏗️ Enterprise Architecture
+- Bias analysis across multiple categories
+- Neutral rewrite suggestions
+- Side-by-side comparison flow
+- Demo-safe authentication fallback
+- Demo-safe backend/API fallback
+- Exportable report experience
+- Audit-style UI with explainable outputs
 
-```mermaid
-graph TD
-    subgraph Client_Side
-        A[Sovereign React UI] --> B[Zustand Neural Store]
-        A --> C[Three.js Holographic Engine]
-    end
-    subgraph Auth_Governance
-        A --> D[Firebase Multi-Auth]
-        D -.-> H[Secure Judge Portal]
-    end
-    subgraph Neural_Edge
-        A --> F[Gemini 1.5 Pro Core]
-        A --> E[Supabase Sentinel Edge]
-        E --> G[PostgreSQL Ledger]
-    end
-```
+## Stack
 
----
+Frontend:
+- React 18
+- Zustand
+- Framer Motion
+- Three.js
+- Jest + React Testing Library
 
-## 📈 Performance & Quality Metrics
+Backend and services:
+- Google Gemini
+- Supabase Edge Functions
+- Firebase Auth
 
-- **Avg. Response Time**: <1.5s for Real-time Bias Analysis
-- **Demo Stability**: Intelligent Mock Fallback system for offline/no-key usage
-- **UI Performance**: 90+ Lighthouse score across all core metrics
-- **Visuals**: GPU-accelerated 3D bias variance projections
+## Architecture & Screenshots
 
----
+![Platform Dashboard](./docs/dashboard-preview.png)
+*(A look at the Unbiased AI neural engine dashboard)*
 
-## 📂 Project Structure
+### Workflow Diagram
+1. **Input:** User submits text via the React frontend.
+2. **Processing:** Supabase Edge Functions securely pass the prompt to Google Gemini 1.5.
+3. **Analysis:** Gemini returns a structured JSON breakdown (vectors, confidence, highlights).
+4. **Refraction:** A secondary pass generates a neutral rewrite.
+5. **Output:** The UI renders an interactive audit report, exportable to PDF.
+
+## Project Structure
 
 ```text
 unbiased-ai/
-├── frontend/            # React Client
-│   ├── src/components/  # Cyber-noir UI Components
-│   ├── src/pages/       # Streamlined Feature Views
-│   └── src/supabase.js  # Neural Uplink & Gemini Logic
-├── supabase/            # Backend Edge Functions
-│   └── functions/       # Core Logic (Rewrite, Compare)
-├── tests/               # Global test suites (Jest)
-└── docs/                # Comprehensive technical documentation
+|-- frontend/
+|   |-- src/components/
+|   |-- src/pages/
+|   `-- src/supabase.js
+|-- supabase/
+|   `-- functions/
+|-- tests/
+|-- docs/
+`-- DEMO_SCRIPT.md
 ```
 
----
+## Local Setup
 
-## 🛠️ Quick Start
+Create `frontend/.env`:
 
-### 1. Environment Synthesis
-Create a `.env` in `frontend/` with:
 ```env
 REACT_APP_FIREBASE_API_KEY=your_key
+REACT_APP_FIREBASE_AUTH_DOMAIN=your_domain
+REACT_APP_FIREBASE_PROJECT_ID=your_project
+REACT_APP_FIREBASE_STORAGE_BUCKET=your_bucket
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender
+REACT_APP_FIREBASE_APP_ID=your_app_id
 REACT_APP_SUPABASE_URL=your_url
 REACT_APP_SUPABASE_ANON_KEY=your_key
 REACT_APP_GEMINI_API_KEY=your_key
 ```
 
-### 2. Local Launch
+Run locally:
+
 ```bash
 cd frontend
 npm install
 npm start
 ```
 
----
+## Verification
 
-## 📄 License & Credits
-- **License**: [Apache License 2.0](LICENSE)
-- **Lead Architect**: **Krish Joshi**
-- **Neural Partners**: **Gemini 1.5 Pro** & **Antigravity AI**
+Frontend checks used during polish:
+- `npm test -- --watchAll=false`
+- `npm run build`
 
----
-*“Neutrality is not a state of being; it is a vector of intelligence.”*
+## Submission Angle
+
+Best one-line pitch:
+
+`Unbiased AI turns bias detection into an actionable workflow: detect, explain, compare, and rewrite.`
+
+## Credits
+
+- Architect: Krish Joshi
+- AI partner: Gemini
+- License: Apache 2.0

@@ -10,7 +10,7 @@ The Unbiased AI project has been streamlined for maximum hackathon impact, focus
 |:---|:---|:---|:---|
 | **Bias Scan** | ✅ Active | Direct Uplink | High-fidelity analysis using Gemini 1.5 Pro |
 | **Neural Refraction** | ✅ Active | Direct Uplink | Intelligent bias neutralization and rewriting |
-| **Sovereign Arbiter** | ✅ Active | Direct Uplink | Ethical AI counselor for bias mitigation |
+
 | **Delta Compare** | ✅ Active | Supabase Edge | Side-by-side holographic bias comparison |
 | **Neural Signatures** | ✅ Active | Auth Layer | Cryptographic proof of audit authenticity |
 | **Mock Simulation** | ✅ Active | Frontend | Intelligent fallback when API keys are absent |

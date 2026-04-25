@@ -9,8 +9,8 @@ import toast from 'react-hot-toast';
 import { MOCK_ANALYSIS } from '../mockData';
 
 const EXAMPLE_TEXTS = [
-  "The chairman led the meeting and he made it clear that we need more manpower to complete the project. The young employees are tech-savvy but lack the maturity of older workers.",
-  "Politicians from that party always lie and deceive their constituents. These immigrants are stealing jobs from hardworking Americans.",
+  'The chairman led the meeting and he made it clear that we need more manpower to complete the project. The young employees are tech-savvy but lack the maturity of older workers.',
+  'Politicians from that party always lie and deceive their constituents. These immigrants are stealing jobs from hardworking Americans.',
   "She's a great leader for a woman. The elderly patient couldn't understand the simple instructions.",
 ];
 
@@ -21,70 +21,65 @@ export default function AnalyzePage() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('highlighted');
   const textareaRef = useRef(null);
-
   const setIsAnalyzing = useStore((s) => s.setIsAnalyzing);
 
   const analyze = async () => {
-    if (!text.trim()) { toast.error('Enter text to analyze'); return; }
+    if (!text.trim()) {
+      toast.error('Enter text to analyze');
+      return;
+    }
+
     setIsAnalyzing(true);
     setLoading(true);
     setResult(null);
+
     try {
       const data = await api.analyzeText(text, { userId: user?.uid });
-      
+
       if (data && data.error) {
-        let errorMsg = data.error;
-        if (data.error.includes('Backend unavailable')) {
-          errorMsg = '[DEPLOYMENT_ERROR]: Backend not responding. Please deploy Supabase functions. See DEPLOYMENT_FIX.md';
-        } else if (data.error.includes('not found')) {
-          errorMsg = '[MODEL_ERROR]: Gemini API error. Ensure GEMINI_API_KEY is set correctly in Supabase.';
-        }
-        toast.error(errorMsg.substring(0, 80) + '...');
-        setIsAnalyzing(false);
-        setLoading(false);
-        return;
+        throw new Error(data.error);
       }
 
       if (data && data.biases) {
-        // If the main analysis already contains refraction, merge it
         if (data.objectiveRefraction) {
           data.rewritten = data.objectiveRefraction;
-          data.rewriteExplanation = "Pre-computed by Sovereign Neural Arbiter during primary scan.";
+          data.rewriteExplanation = 'Pre-computed by Sovereign Neural Engine during primary scan.';
         }
 
         setResult(data);
         useStore.getState().setCurrentAnalysis(data);
-        
+
         if (user) {
           try {
-            await api.saveAnalysis({ 
-              user_id: user.uid, 
-              original_text: text, 
-              bias_score: data.biasScore || 0, 
-              bias_types: data.biasTypes || {}, 
+            await api.saveAnalysis({
+              user_id: user.uid,
+              original_text: text,
+              bias_score: data.biasScore || 0,
+              bias_types: data.biasTypes || {},
               findings: data.biases || [],
               summary: data.summary || '',
               neural_signature: data.neuralSignature || '',
-              created_at: new Date().toISOString() 
+              created_at: new Date().toISOString(),
             });
-          } catch (dbErr) {
-            console.error('Database Sync Failed:', dbErr);
+          } catch {
+            toast.error('Analysis saved locally but cloud sync failed.');
           }
         }
+
         toast.success('Analysis complete');
       } else {
-        throw new Error(data?.error || 'Neural computation returned malformed data');
+        throw new Error('Neural computation returned malformed data');
       }
-    } catch (err) {
-      console.warn('API Analysis Failed, entering Neural Simulation Mode (Mock Fallback)', err);
-      toast.error('Direct Neural Uplink Failed. Entering Simulation Mode.');
-      
-      // Artificial delay for realism
-      await new Promise(r => setTimeout(r, 1500));
-      
-      const mockResult = { ...MOCK_ANALYSIS, original_text: text };
+    } catch {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      const mockResult = {
+        ...MOCK_ANALYSIS,
+        original_text: text,
+        rewritten: MOCK_ANALYSIS.rewritten || MOCK_ANALYSIS.objectiveRefraction,
+      };
       setResult(mockResult);
       useStore.getState().setCurrentAnalysis(mockResult);
+      toast.success('Simulation mode active');
     } finally {
       setIsAnalyzing(false);
       setLoading(false);
@@ -93,11 +88,17 @@ export default function AnalyzePage() {
 
   const rewrite = async () => {
     if (!result) return;
+
     setIsAnalyzing(true);
     setLoading(true);
     try {
       const data = await api.rewriteUnbiased(text, Object.keys(result.biasTypes || {}));
-      setResult((r) => ({ ...r, rewritten: data.rewritten, rewriteExplanation: data.explanation }));
+      setResult((current) => ({
+        ...current,
+        rewritten: data.rewritten || data.rewrittenText || current?.rewritten || text,
+        rewriteExplanation: data.explanation || 'Neutral rewrite generated.',
+      }));
+      setActiveTab('rewritten');
       toast.success('Refraction refreshed');
     } catch {
       toast.error('Refraction update failed');
@@ -107,43 +108,42 @@ export default function AnalyzePage() {
     }
   };
 
-  const renderHighlighted = (text, findings) => {
-    if (!findings?.length) return <p className="text-body">{text}</p>;
-    
-    // Sort by start index
-    const sorted = [...findings].filter(f => f.start !== undefined).sort((a, b) => a.start - b.start);
-    if (sorted.length === 0) return <p className="text-body">{text}</p>;
+  const renderHighlighted = (sourceText, findings) => {
+    if (!findings?.length) return <p className="text-body">{sourceText}</p>;
 
-    let parts = [];
+    const sorted = [...findings].filter((f) => f.start !== undefined).sort((a, b) => a.start - b.start);
+    if (sorted.length === 0) return <p className="text-body">{sourceText}</p>;
+
+    const parts = [];
     let lastIdx = 0;
-    
-    sorted.forEach((f, i) => {
-      // Add text before highlight
-      if (f.start > lastIdx) {
-        parts.push(<span key={`t${i}`}>{text.slice(lastIdx, f.start)}</span>);
+
+    sorted.forEach((finding, i) => {
+      if (finding.start > lastIdx) {
+        parts.push(<span key={`t${i}`}>{sourceText.slice(lastIdx, finding.start)}</span>);
       }
-      // Add highlight
       parts.push(
-        <span key={`h${i}`} className={`bias-highlight bias-highlight-${f.type}`}
-          title={`${f.type.toUpperCase()} BIAS: ${f.explanation}`}>
-          {text.slice(f.start, f.end)}
+        <span
+          key={`h${i}`}
+          className={`bias-highlight bias-highlight-${finding.type}`}
+          title={`${finding.type.toUpperCase()} BIAS: ${finding.explanation}`}
+        >
+          {sourceText.slice(finding.start, finding.end)}
         </span>
       );
-      lastIdx = f.end;
+      lastIdx = finding.end;
     });
-    
-    // Add remaining text
-    if (lastIdx < text.length) {
-        parts.push(<span key="last">{text.slice(lastIdx)}</span>);
+
+    if (lastIdx < sourceText.length) {
+      parts.push(<span key="last">{sourceText.slice(lastIdx)}</span>);
     }
-    
+
     return (
-      <p style={{ 
-        fontFamily: 'var(--font-body)', 
-        lineHeight: 1.8, 
-        color: 'var(--text-primary)', 
+      <p style={{
+        fontFamily: 'var(--font-body)',
+        lineHeight: 1.8,
+        color: 'var(--text-primary)',
         whiteSpace: 'pre-wrap',
-        fontSize: 15
+        fontSize: 15,
       }}>
         {parts}
       </p>
@@ -154,68 +154,65 @@ export default function AnalyzePage() {
     if (!result) return;
     const doc = new jsPDF();
     const cyan = [0, 245, 255];
-    
-    // Header
+
     doc.setFillColor(10, 10, 15);
     doc.rect(0, 0, 210, 40, 'F');
     doc.setTextColor(cyan[0], cyan[1], cyan[2]);
     doc.setFontSize(24);
     doc.text('SOVEREIGN AUDIT REPORT', 20, 25);
-    
+
     doc.setFontSize(10);
     doc.setTextColor(150, 150, 150);
-    doc.text(`ARCHITECT: KRISH JOSHI | PARTNERS: GEMINI & ANTIGRAVITY`, 20, 35);
+    doc.text('ARCHITECT: KRISH JOSHI | PARTNERS: GEMINI & ANTIGRAVITY', 20, 35);
 
-    // Signature
-    doc.setTextColor( cyan[0], cyan[1], cyan[2]);
+    doc.setTextColor(cyan[0], cyan[1], cyan[2]);
     doc.setFontSize(8);
     doc.text(`NEURAL SIGNATURE: ${result.neuralSignature}`, 140, 25);
 
-    // Content
     doc.setTextColor(40, 40, 40);
     doc.setFontSize(12);
     doc.text('ANALYSIS SUMMARY', 20, 55);
     doc.setFontSize(10);
-    const splitSummary = doc.splitTextToSize(result.summary, 170);
+    const splitSummary = doc.splitTextToSize(result.summary || '', 170);
     doc.text(splitSummary, 20, 65);
 
     let y = 65 + (splitSummary.length * 5) + 10;
-
-    // Biases
     doc.setFontSize(12);
     doc.text('DETECTED BIAS VECTORS', 20, y);
     y += 10;
 
-    result.biases.forEach((b, i) => {
-      if (y > 270) { doc.addPage(); y = 20; }
+    (result.biases || []).forEach((bias) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
       doc.setFontSize(10);
       doc.setTextColor(cyan[0], cyan[1], cyan[2]);
-      doc.text(`[${b.type.toUpperCase()}] Confidence: ${Math.round(b.confidence * 100)}%`, 20, y);
+      doc.text(`[${bias.type.toUpperCase()}] Confidence: ${Math.round((bias.confidence || 0) * 100)}%`, 20, y);
       y += 6;
       doc.setTextColor(60, 60, 60);
-      const splitExp = doc.splitTextToSize(b.explanation, 170);
+      const splitExp = doc.splitTextToSize(bias.explanation || '', 170);
       doc.text(splitExp, 20, y);
       y += (splitExp.length * 5) + 4;
-      
+
       doc.setTextColor(20, 150, 20);
       doc.text('REFRACTION SUGGESTION:', 20, y);
       y += 5;
       doc.setTextColor(0, 0, 0);
-      const splitSug = doc.splitTextToSize(b.suggestion, 170);
+      const splitSug = doc.splitTextToSize(bias.suggestion || '', 170);
       doc.text(splitSug, 20, y);
       y += (splitSug.length * 5) + 10;
     });
 
-    // Branding Footer
     const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(180, 180, 180);
-        doc.text(`Page ${i} of ${pageCount} | Unbiased AI Sovereign Layer | Official Hackathon Audit`, 105, 285, { align: 'center' });
+    for (let i = 1; i <= pageCount; i += 1) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(180, 180, 180);
+      doc.text(`Page ${i} of ${pageCount} | Unbiased AI Sovereign Layer | Official Hackathon Audit`, 105, 285, { align: 'center' });
     }
 
-    doc.save(`audit_${result.neuralSignature.slice(0, 8)}.pdf`);
+    doc.save(`audit_${(result.neuralSignature || 'report').slice(0, 8)}.pdf`);
     toast.success('Institutional Audit Exported');
   };
 
@@ -223,9 +220,9 @@ export default function AnalyzePage() {
 
   return (
     <div style={{ padding: 32, maxWidth: 1400 }}>
-      <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
         <div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: 3, marginBottom: 8 }}>NEURAL ARBITER SERVICE</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: 3, marginBottom: 8 }}>NEURAL ENGINE SERVICE</div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 36, color: 'var(--text-primary)' }}>
             SOVEREIGN <span className="text-neon-cyan">AUDIT</span>
           </h1>
@@ -240,17 +237,22 @@ export default function AnalyzePage() {
         )}
       </div>
 
-      {/* Input */}
       <div className="glass-card" style={{ padding: 28, marginBottom: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 12, flexWrap: 'wrap' }}>
           <label style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)', letterSpacing: 2 }}>INPUT STREAM</label>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {EXAMPLE_TEXTS.map((ex, i) => (
-              <button key={i} onClick={() => setText(ex)} style={{
-                padding: '4px 12px', borderRadius: 6, border: '1px solid rgba(0,245,255,0.2)',
-                background: 'transparent', color: 'var(--cyan)', cursor: 'pointer',
-                fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
-              }}>EXAMPLE {i + 1}</button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {EXAMPLE_TEXTS.map((example, i) => (
+              <button
+                key={example}
+                onClick={() => setText(example)}
+                style={{
+                  padding: '4px 12px', borderRadius: 6, border: '1px solid rgba(0,245,255,0.2)',
+                  background: 'transparent', color: 'var(--cyan)', cursor: 'pointer',
+                  fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
+                }}
+              >
+                EXAMPLE {i + 1}
+              </button>
             ))}
           </div>
         </div>
@@ -264,39 +266,36 @@ export default function AnalyzePage() {
           style={{ minHeight: 180 }}
         />
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, gap: 12, flexWrap: 'wrap' }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>
-            {text.length} chars · {text.split(/\s+/).filter(Boolean).length} words
+            {text.length} chars | {text.split(/\s+/).filter(Boolean).length} words
           </div>
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <button className="btn-secondary" onClick={() => { setText(''); setResult(null); }}>CLEAR</button>
             <button className="btn-primary" onClick={analyze} disabled={loading || !text.trim()}>
               {loading ? 'PERFORMING NEURAL AUDIT...' : 'INITIATE AUDIT'}
             </button>
             {result && !result.rewritten && (
               <button className="btn-secondary" onClick={rewrite} disabled={loading} style={{ borderColor: 'var(--purple)', color: 'var(--purple)' }}>
-                REFRACT TEXT
+                NEUTRAL REWRITE
               </button>
             )}
           </div>
         </div>
       </div>
 
-      {/* Results */}
       {result && (
-        <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 24, animation: 'slide-up 0.5s ease' }}>
-          {/* Left panel - intelligence cluster */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 320px) 1fr', gap: 24, animation: 'slide-up 0.5s ease' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div className="glass-card" style={{ padding: 24, textAlign: 'center' }}>
               <BiasMeter score={result.biasScore || 0} label="INTENSITY INDEX" size={180} />
               <div style={{ marginTop: 16 }}>
                 <div className={`badge badge-${result.biasScore > 0.6 ? 'high' : result.biasScore > 0.3 ? 'medium' : 'clean'}`} style={{ margin: '0 auto' }}>
-                  {result.biasScore > 0.6 ? '⚠ CRITICAL BIAS' : result.biasScore > 0.3 ? '◈ MODERATE BIAS' : '✓ CONFORMANT'}
+                  {result.biasScore > 0.6 ? 'HIGH BIAS' : result.biasScore > 0.3 ? 'MODERATE BIAS' : 'LOW BIAS'}
                 </div>
               </div>
             </div>
 
-            {/* Prophetic Vector */}
             {result.propheticVector && (
               <div className="glass-card" style={{ padding: 24, border: '1px solid rgba(255,102,0,0.2)', background: 'linear-gradient(135deg, rgba(255,102,0,0.05) 0%, transparent 100%)' }}>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#ff6600', letterSpacing: 2, marginBottom: 12 }}>NEURAL FORECAST</div>
@@ -306,7 +305,6 @@ export default function AnalyzePage() {
               </div>
             )}
 
-            {/* Bias breakdown */}
             {result.biasTypes && Object.keys(result.biasTypes).length > 0 && (
               <div className="glass-card" style={{ padding: 24 }}>
                 <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', marginBottom: 16, letterSpacing: 1 }}>ANALYSIS VECTORS</div>
@@ -324,50 +322,51 @@ export default function AnalyzePage() {
               </div>
             )}
 
-            {/* Bias Vector Graph */}
             {result.biasTypes && Object.keys(result.biasTypes).length > 0 && (
               <BiasVectorGraph analysis={result} animated={true} />
             )}
           </div>
 
-          {/* Right panel - detailed findings & refraction */}
           <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--cyan)', letterSpacing: 1 }}>SOVEREIGN AUDIT REPORT</div>
-              <button 
-                onClick={exportPDF} 
+              <button
+                onClick={exportPDF}
                 style={{
                   padding: '6px 14px', borderRadius: 6, background: 'rgba(0,245,255,0.1)',
                   border: '1px solid rgba(0,245,255,0.3)', color: 'var(--cyan)',
-                  fontFamily: 'var(--font-mono)', fontSize: 10, cursor: 'pointer'
+                  fontFamily: 'var(--font-mono)', fontSize: 10, cursor: 'pointer',
                 }}
               >
                 EXPORT PDF
               </button>
             </div>
-            
+
             <div style={{ flex: 1, padding: 32, overflowY: 'auto', maxHeight: 680 }} className="scroll-fade">
-              {/* Tabs */}
               <div style={{ display: 'flex', gap: 24, marginBottom: 24, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                <button 
+                <button
                   onClick={() => setActiveTab('highlighted')}
-                  style={{ 
-                    padding: '8px 4px', background: 'none', border: 'none', 
+                  style={{
+                    padding: '8px 4px', background: 'none', border: 'none',
                     color: activeTab === 'highlighted' ? 'var(--cyan)' : 'var(--text-muted)',
                     borderBottom: activeTab === 'highlighted' ? '2px solid var(--cyan)' : 'none',
-                    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 13, cursor: 'pointer'
+                    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 13, cursor: 'pointer',
                   }}
-                >DETECTION MAP</button>
+                >
+                  DETECTION MAP
+                </button>
                 {result.rewritten && (
-                  <button 
+                  <button
                     onClick={() => setActiveTab('rewritten')}
-                    style={{ 
-                      padding: '8px 4px', background: 'none', border: 'none', 
+                    style={{
+                      padding: '8px 4px', background: 'none', border: 'none',
                       color: activeTab === 'rewritten' ? 'var(--green)' : 'var(--text-muted)',
                       borderBottom: activeTab === 'rewritten' ? '2px solid var(--green)' : 'none',
-                      fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 13, cursor: 'pointer'
+                      fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 13, cursor: 'pointer',
                     }}
-                  >OBJECTIVE REFRACTION</button>
+                  >
+                    NEUTRAL REWRITE
+                  </button>
                 )}
               </div>
 
@@ -375,9 +374,9 @@ export default function AnalyzePage() {
                 <div style={{ marginBottom: 32 }}>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', marginBottom: 16 }}>ANALYZED DATA STREAM</div>
                   {renderHighlighted(text, result.biases || [])}
-                  
+
                   <div className="cyber-divider" />
-                  
+
                   <div style={{ marginTop: 24 }}>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', marginBottom: 12 }}>NEURAL SUMMARY</div>
                     <p style={{ fontSize: 15, lineHeight: 1.8, color: 'var(--text-secondary)' }}>{result.summary}</p>
@@ -385,9 +384,9 @@ export default function AnalyzePage() {
                 </div>
               ) : (
                 <div style={{ marginBottom: 32, animation: 'fade-in 0.3s ease' }}>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', marginBottom: 16 }}>REFRACTED NEUTRAL STREAM</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', marginBottom: 16 }}>NEUTRAL REWRITE GENERATED</div>
                   <p style={{ fontSize: 15, lineHeight: 1.9, color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>{result.rewritten}</p>
-                  
+
                   <div className="glass-card" style={{ marginTop: 24, padding: 20, background: 'rgba(0,255,136,0.03)', border: '1px solid rgba(0,255,136,0.1)' }}>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', marginBottom: 8 }}>REFRACTION LOGIC</div>
                     <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>{result.rewriteExplanation}</p>
@@ -397,34 +396,33 @@ export default function AnalyzePage() {
 
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', marginBottom: 16 }}>DETAILED FINDINGS</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                {(result.biases || []).map((b, i) => (
-                  <div key={i} style={{ padding: 20, borderRadius: 12, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--cyan)' }}>[{b.type.toUpperCase()}]</span>
-                      <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>CONFIDENCE: {Math.round(b.confidence * 100)}%</span>
+                {(result.biases || []).map((bias, i) => (
+                  <div key={`${bias.type}-${i}`} style={{ padding: 20, borderRadius: 12, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, gap: 12 }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--cyan)' }}>[{bias.type.toUpperCase()}]</span>
+                      <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>CONFIDENCE: {Math.round((bias.confidence || 0) * 100)}%</span>
                     </div>
-                    <p style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 16 }}>{b.explanation}</p>
-                    {b.counterVector && (
+                    <p style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 16 }}>{bias.explanation}</p>
+                    {bias.counterVector && (
                       <div style={{ padding: 12, borderRadius: 8, background: 'rgba(255,51,102,0.05)', border: '1px solid rgba(255,51,102,0.1)', marginBottom: 12 }}>
                         <div style={{ fontSize: 10, color: '#ff3366', marginBottom: 6, fontFamily: 'var(--font-mono)' }}>COUNTER-VECTOR:</div>
-                        <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{b.counterVector}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{bias.counterVector}</div>
                       </div>
                     )}
-                    {b.corroboratingTruth && (
+                    {bias.corroboratingTruth && (
                       <div style={{ padding: 12, borderRadius: 8, background: 'rgba(0,255,136,0.05)', border: '1px solid rgba(0,255,136,0.1)', marginBottom: 12 }}>
                         <div style={{ fontSize: 10, color: 'var(--green)', marginBottom: 6, fontFamily: 'var(--font-mono)' }}>CORROBORATING TRUTH:</div>
-                        <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{b.corroboratingTruth}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{bias.corroboratingTruth}</div>
                       </div>
                     )}
                     <div style={{ padding: 12, borderRadius: 8, background: 'rgba(0,245,255,0.05)', border: '1px solid rgba(0,245,255,0.1)' }}>
                       <div style={{ fontSize: 10, color: 'var(--cyan)', marginBottom: 6, fontFamily: 'var(--font-mono)' }}>SUGGESTED REFRACTION:</div>
-                      <div style={{ fontSize: 13, color: 'var(--text-primary)' }}>{b.suggestion}</div>
+                      <div style={{ fontSize: 13, color: 'var(--text-primary)' }}>{bias.suggestion}</div>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Cross-References Component */}
               {result.crossReferences && result.crossReferences.length > 0 && (
                 <CrossReferences analysis={result} />
               )}

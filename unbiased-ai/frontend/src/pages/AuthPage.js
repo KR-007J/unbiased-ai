@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   signInWithEmailAndPassword, createUserWithEmailAndPassword,
-  signInWithPopup, updateProfile
+  signInWithPopup, updateProfile,
 } from 'firebase/auth';
-import { auth, googleProvider } from '../firebase';
+import { auth, googleProvider, isFirebaseConfigured } from '../firebase';
+import { useStore } from '../store';
 import toast from 'react-hot-toast';
 
 export default function AuthPage() {
@@ -14,10 +15,26 @@ export default function AuthPage() {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const setUser = useStore((s) => s.setUser);
 
+  const enterDemoMode = () => {
+    setUser({
+      uid: 'demo-user',
+      email: 'demo@unbiased.ai',
+      displayName: 'Demo Operator',
+      isDemo: true,
+    });
+    toast.success('Demo mode enabled');
+    navigate('/app');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isFirebaseConfigured || !auth) {
+      enterDemoMode();
+      return;
+    }
+
     setLoading(true);
     try {
       if (mode === 'login') {
@@ -37,12 +54,17 @@ export default function AuthPage() {
   };
 
   const handleGoogle = async () => {
+    if (!isFirebaseConfigured || !auth) {
+      enterDemoMode();
+      return;
+    }
+
     setLoading(true);
     try {
       await signInWithPopup(auth, googleProvider);
       toast.success('Google auth successful.');
       navigate('/app');
-    } catch (err) {
+    } catch {
       toast.error('Google authentication failed');
     } finally {
       setLoading(false);
@@ -54,7 +76,6 @@ export default function AuthPage() {
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: 24, position: 'relative',
     }}>
-      {/* Holographic ring BG */}
       <div style={{
         position: 'absolute', width: 600, height: 600, borderRadius: '50%',
         border: '1px solid rgba(0,245,255,0.06)',
@@ -71,21 +92,34 @@ export default function AuthPage() {
       }} />
 
       <div className="glass-card" style={{ width: '100%', maxWidth: 440, padding: '48px 40px', zIndex: 10 }}>
-        {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{
             width: 64, height: 64, borderRadius: 18, margin: '0 auto 16px',
             background: 'linear-gradient(135deg, #0080ff, #00f5ff)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 28, boxShadow: '0 0 40px rgba(0,245,255,0.4)',
-          }}>⬡</div>
+          }}>AI</div>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 24, letterSpacing: 3, color: 'var(--cyan)' }}>UNBIASED AI</div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', letterSpacing: 3, marginTop: 4 }}>
             {mode === 'login' ? 'AUTHENTICATION PORTAL' : 'IDENTITY REGISTRATION'}
           </div>
         </div>
 
-        {/* Toggle */}
+        {!isFirebaseConfigured && (
+          <div style={{
+            marginBottom: 24,
+            padding: 14,
+            borderRadius: 12,
+            border: '1px solid rgba(255, 184, 0, 0.25)',
+            background: 'rgba(255, 184, 0, 0.08)',
+            color: '#ffd37a',
+            fontSize: 12,
+            lineHeight: 1.6,
+          }}>
+            Firebase is not configured in this deployment. Demo mode is available for judging and product walkthroughs.
+          </div>
+        )}
+
         <div style={{ display: 'flex', marginBottom: 32, background: 'rgba(0,0,0,0.3)', borderRadius: 10, padding: 4 }}>
           {['login', 'signup'].map((m) => (
             <button key={m} onClick={() => setMode(m)} style={{
@@ -104,20 +138,20 @@ export default function AuthPage() {
           {mode === 'signup' && (
             <div style={{ marginBottom: 16 }}>
               <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: 2, display: 'block', marginBottom: 8 }}>OPERATOR NAME</label>
-              <input className="input-cyber" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Enter your name" required />
+              <input className="input-cyber" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter your name" required />
             </div>
           )}
           <div style={{ marginBottom: 16 }}>
             <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: 2, display: 'block', marginBottom: 8 }}>EMAIL ADDRESS</label>
-            <input className="input-cyber" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="operator@domain.com" required />
+            <input className="input-cyber" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="operator@domain.com" required />
           </div>
           <div style={{ marginBottom: 28 }}>
             <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: 2, display: 'block', marginBottom: 8 }}>ACCESS KEY</label>
-            <input className="input-cyber" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••••••" required minLength={6} />
+            <input className="input-cyber" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" required minLength={6} />
           </div>
 
           <button type="submit" className="btn-primary" style={{ width: '100%', fontSize: 14, padding: '14px', justifyContent: 'center', opacity: loading ? 0.6 : 1 }} disabled={loading}>
-            {loading ? 'AUTHENTICATING...' : mode === 'login' ? 'ACCESS SYSTEM' : 'CREATE IDENTITY'}
+            {loading ? 'AUTHENTICATING...' : !isFirebaseConfigured ? 'ENTER DEMO MODE' : mode === 'login' ? 'ACCESS SYSTEM' : 'CREATE IDENTITY'}
           </button>
         </form>
 
@@ -129,7 +163,7 @@ export default function AuthPage() {
 
         <button onClick={handleGoogle} className="btn-secondary" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '14px', fontSize: 13 }} disabled={loading}>
           <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
-          CONTINUE WITH GOOGLE
+          {isFirebaseConfigured ? 'CONTINUE WITH GOOGLE' : 'CONTINUE IN DEMO MODE'}
         </button>
       </div>
     </div>

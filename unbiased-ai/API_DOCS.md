@@ -241,69 +241,8 @@ Comprehensive analysis with detailed metrics and recommendations.
 
 ---
 
-### 5. Chat - Conversational AI Arbiter
-Interactive multi-turn conversation for bias analysis and ethical guidance.
 
-**Endpoint**: `POST /chat`
-
-**Request**:
-```json
-{
-  "message": "How can I make my job posting less biased?",
-  "conversationId": "conv_123abc",
-  "conversationHistory": [
-    {
-      "role": "user",
-      "content": "I want to improve my writing"
-    },
-    {
-      "role": "assistant",
-      "content": "I'd be happy to help! What would you like to improve?"
-    }
-  ]
-}
-```
-
-**Response** (200 OK - Server-Sent Events Stream):
-```
-data: {"token": "Job"}
-data: {"token": " postings"}
-data: {"token": " often"}
-data: {"token": " contain"}
-data: {"complete": true, "conversationId": "conv_123abc", "fullMessage": "Job postings often contain age bias..."}
-```
-
-Or as JSON (if streaming not supported):
-```json
-{
-  "success": true,
-  "data": {
-    "conversationId": "conv_123abc",
-    "response": "Job postings often contain age bias through language like 'digital native' or 'energetic.' Instead, focus on required skills. For example, replace 'young, energetic team' with 'collaborative, results-driven team.' I recommend scanning job posts through our Bias Detector first.",
-    "suggestions": [
-      "Remove age-coded language (digital native, etc.)",
-      "Focus on skills required, not demographics",
-      "Use our Web Scan feature to check job postings from major sites"
-    ]
-  },
-  "meta": {
-    "processingTime": 2567,
-    "model": "gemini-1.5-pro",
-    "tokensUsed": 145
-  }
-}
-```
-
-**Parameters**:
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| message | string | Yes | User message |
-| conversationId | string | No | Maintain conversation continuity |
-| conversationHistory | array | No | Previous messages for context |
-
----
-
-### 6. Web Scan - Analyze URLs
+### 5. Web Scan - Analyze URLs
 Scan and analyze bias in web content from URLs (news, articles, social posts).
 
 **Endpoint**: `POST /web-scan`
@@ -369,7 +308,7 @@ Scan and analyze bias in web content from URLs (news, articles, social posts).
 
 ---
 
-### 7. Batch Analyze
+### 6. Batch Analyze
 Process multiple texts in a single request for efficiency.
 
 **Endpoint**: `POST /batch-analyze`
@@ -454,7 +393,7 @@ Process multiple texts in a single request for efficiency.
 
 ---
 
-### 8. News Bias Scanner
+### 7. News Bias Scanner
 Compares news coverage from Left, Right, and Center sources on a given topic.
 
 **Endpoint**: `POST /news-bias`
@@ -487,7 +426,7 @@ Compares news coverage from Left, Right, and Center sources on a given topic.
 
 ---
 
-### 9. Bias Battle
+### 8. Bias Battle
 Gamified comparison of two texts to determine which is more biased.
 
 **Endpoint**: `POST /bias-battle`
@@ -513,7 +452,7 @@ Gamified comparison of two texts to determine which is more biased.
 
 ---
 
-### 10. Bias Fingerprint
+### 9. Bias Fingerprint
 Analyzes an individual writer's unique bias profile and writing style.
 
 **Endpoint**: `POST /bias-fingerprint`

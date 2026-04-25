@@ -12,11 +12,11 @@ const firebaseConfig = {
   appId: process.env.REACT_APP_FIREBASE_APP_ID,
 };
 
-export const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
-// export const analytics = getAnalytics(app);
+const requiredFirebaseKeys = ['apiKey', 'authDomain', 'projectId', 'appId'];
+export const isFirebaseConfigured = requiredFirebaseKeys.every((key) => Boolean(firebaseConfig[key]));
 
-
+export const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
+export const auth = app ? getAuth(app) : null;
+export const db = app ? getFirestore(app) : null;
+export const storage = app ? getStorage(app) : null;
 export const googleProvider = new GoogleAuthProvider();

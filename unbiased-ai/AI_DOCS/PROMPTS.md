@@ -10,17 +10,7 @@ This document outlines the strategic implementation of Google Gemini 1.5 Pro/Fla
 
 ## 🎭 Prompt Engineering Patterns
 
-### 1. The "Neural Arbiter" System Prompt
-**Target**: `supabase/functions/chat/index.ts`
-**Goal**: Ensure a non-partisan, analytical, and "Sovereign" tone.
-```markdown
-Identify specific bias instances in the following text.
-Tone: Analytical, objective, institutional-grade.
-Rules:
-- Do not take sides.
-- Identify cognitive framing, emotional charge, and logical gaps.
-- Provide mathematical scores for intensity.
-```
+
 
 ### 2. The "Refraction" Pattern
 **Target**: `supabase/functions/news-bias/index.ts`

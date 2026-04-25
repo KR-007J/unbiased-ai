@@ -3,17 +3,43 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
-// Common headers for all API calls
+const createNoopSupabaseClient = () => ({
+  functions: {
+    invoke: async () => ({
+      data: null,
+      error: { message: 'Supabase is not configured', status: 503 },
+    }),
+  },
+  from: () => ({
+    select: () => ({
+      eq: () => ({
+        order: () => ({
+          limit: async () => ({ data: [], error: null }),
+        }),
+      }),
+    }),
+    insert: () => ({
+      select: async () => ({ data: [], error: { message: 'Supabase is not configured' } }),
+    }),
+  }),
+});
+
+export const supabase = isSupabaseConfigured
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : createNoopSupabaseClient();
+
 const apiHeaders = {
   'Content-Type': 'application/json',
 };
 
-// Helper to format error messages
 const formatError = (status, message) => {
   if (status === 500) {
     return `Backend Error: ${message || 'API request failed. Check Supabase logs.'}`;
+  }
+  if (status === 503) {
+    return message || 'Backend unavailable. Configure Supabase to enable live analysis.';
   }
   if (status === 429) {
     return 'High traffic detected. Retrying request...';
@@ -24,10 +50,79 @@ const formatError = (status, message) => {
   return message || 'Unknown error occurred';
 };
 
-// API helpers
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const sanitizeJsonString = (value = '') => value.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+
+const parseJsonResponse = (value, fallback = {}) => {
+  const cleaned = sanitizeJsonString(value);
+  if (!cleaned) return fallback;
+
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+    throw new Error('Failed to parse AI response');
+  }
+};
+
+const buildMockAnalysis = (text = '') => ({
+  biasScore: 0.32,
+  confidence: 0.87,
+  biasTypes: {
+    gender: 0.22,
+    racial: 0.18,
+    political: 0.41,
+    age: 0.16,
+    cultural: 0.27,
+    socioeconomic: 0.19,
+  },
+  biases: [
+    {
+      type: 'political',
+      text: text.substring(0, 80) || 'Sample excerpt',
+      explanation: 'The wording leans toward a broad adversarial framing instead of verifiable description.',
+      confidence: 0.78,
+      suggestion: 'Replace absolute claims with sourced, specific statements.',
+      counterVector: 'A neutral framing would separate opinion, evidence, and attribution.',
+      corroboratingTruth: 'Claims with loaded wording are more likely to be perceived as partisan.',
+    },
+  ],
+  summary: 'Simulation mode is active because live AI services are not fully configured. The response shape matches the production pipeline so the demo remains usable.',
+  severity: 'medium',
+  propheticVector: 'Repeated use of loaded phrasing can increase polarization and reduce trust.',
+  objectiveRefraction: text ? text.replace(/\b(always|never|all|none)\b/gi, 'often') : 'Provide a neutral rewrite here.',
+  neuralSignature: Math.random().toString(36).substring(2, 18).padEnd(16, '0').slice(0, 16),
+});
+
+const normalizeAnalysisResponse = (data, originalText = '') => {
+  const normalized = data || {};
+  return {
+    biasScore: typeof normalized.biasScore === 'number' ? normalized.biasScore : 0,
+    confidence: typeof normalized.confidence === 'number' ? normalized.confidence : 0.8,
+    biasTypes: normalized.biasTypes || {},
+    biases: Array.isArray(normalized.biases) ? normalized.biases : [],
+    summary: normalized.summary || 'Analysis completed.',
+    severity: normalized.severity || 'medium',
+    propheticVector: normalized.propheticVector || '',
+    objectiveRefraction: normalized.objectiveRefraction || '',
+    rewritten: normalized.rewritten || normalized.rewrittenText || normalized.objectiveRefraction || '',
+    rewriteExplanation: normalized.rewriteExplanation || normalized.explanation || '',
+    neuralSignature: normalized.neuralSignature || Math.random().toString(36).substring(2, 18).padEnd(16, '0').slice(0, 16),
+    original_text: normalized.original_text || originalText,
+    crossReferences: normalized.crossReferences || [],
+  };
+};
+
 export const api = {
-  // Generic function invoker with retry logic
   async call(functionName, payload = {}, retries = 3, backoff = 1000) {
+    if (!isSupabaseConfigured) {
+      return { error: 'Backend unavailable. Configure Supabase to enable live analysis.', status: 503 };
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke(functionName, {
         body: payload,
@@ -35,16 +130,13 @@ export const api = {
       });
 
       if (error) {
-        // If it's a rate limit or transient error, retry
         if (retries > 0 && (error.status === 429 || error.status >= 500)) {
           const waitTime = backoff * (4 - retries);
-          console.warn(`Transient error calling ${functionName}. Retrying in ${waitTime}ms... (${retries} retries left)`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
+          await delay(waitTime);
           return this.call(functionName, payload, retries - 1, backoff);
         }
-        
+
         const formattedMsg = formatError(error.status || 500, error.message);
-        console.error(`Error calling ${functionName}:`, error);
         return { error: formattedMsg, status: error.status };
       }
 
@@ -52,11 +144,9 @@ export const api = {
     } catch (err) {
       if (retries > 0) {
         const waitTime = backoff * (4 - retries);
-        console.warn(`Connection error calling ${functionName}. Retrying in ${waitTime}ms...`);
-        await new Promise(resolve => setTimeout(resolve, waitTime));
+        await delay(waitTime);
         return this.call(functionName, payload, retries - 1, backoff);
       }
-      console.error(`Failed to invoke ${functionName}:`, err);
       return { error: err.message, status: 500 };
     }
   },
@@ -64,43 +154,13 @@ export const api = {
   async analyzeText(payload, options = {}) {
     const text = typeof payload === 'string' ? payload : payload.text;
 
-    // For hackathon demo, use direct Gemini API call
     try {
       const geminiKey = process.env.REACT_APP_GEMINI_API_KEY;
       if (!geminiKey || geminiKey === 'YOUR_GEMINI_API_KEY_HERE') {
-        // For demo purposes, return mock data when API key not set
-        console.log('Using mock analysis data (API key not configured)');
-        return {
-          biasScore: Math.random() * 0.8,
-          confidence: 0.85 + Math.random() * 0.1,
-          biasTypes: {
-            gender: Math.random(),
-            racial: Math.random(),
-            political: Math.random(),
-            age: Math.random(),
-            cultural: Math.random(),
-            socioeconomic: Math.random()
-          },
-          biases: [
-            {
-              type: 'political',
-              text: text.substring(0, 50) + '...',
-              explanation: 'Detected potential political bias in language framing',
-              confidence: 0.75,
-              suggestion: 'Consider neutral language',
-              counterVector: 'Alternative perspective focusing on facts',
-              corroboratingTruth: 'Studies show political bias affects 60% of media content'
-            }
-          ],
-          summary: 'Analysis completed using neural simulation mode. Configure Gemini API key for real AI analysis.',
-          severity: 'medium',
-          propheticVector: 'Potential for increased polarization if unaddressed',
-          objectiveRefraction: text.replace(/political|bias/gi, 'neutral'),
-          neuralSignature: Math.random().toString(36).substring(2, 18)
-        };
+        return normalizeAnalysisResponse(buildMockAnalysis(text), text);
       }
 
-      const prompt = `You are the Sovereign Neural Arbiter. Analyze the following discourse for systemic, implicit, and institutional bias across gender, racial, political, age, cultural, and socioeconomic vectors.
+      const prompt = `You are the Sovereign Neural Engine. Analyze the following discourse for systemic, implicit, and institutional bias across gender, racial, political, age, cultural, and socioeconomic vectors.
 
 INPUT DATA:
 """
@@ -137,8 +197,8 @@ RESPOND ONLY WITH A PURE JSON OBJECT:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 3000, topP: 0.95 }
-        })
+          generationConfig: { temperature: 0.1, maxOutputTokens: 3000, topP: 0.95 },
+        }),
       });
 
       if (!response.ok) {
@@ -146,27 +206,17 @@ RESPOND ONLY WITH A PURE JSON OBJECT:
       }
 
       const data = await response.json();
-      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-      const cleaned = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-
-      let result;
-      try {
-        result = JSON.parse(cleaned);
-      } catch (e) {
-        console.error('Failed to parse Gemini response:', cleaned);
-        throw new Error('Failed to parse AI response');
+      return normalizeAnalysisResponse(parseJsonResponse(data.candidates?.[0]?.content?.parts?.[0]?.text), text);
+    } catch {
+      const fallback = await this.call('analyze', typeof payload === 'string' ? { text: payload, ...options } : { ...payload, ...options });
+      if (fallback?.error) {
+        return normalizeAnalysisResponse(buildMockAnalysis(text), text);
       }
-
-      return result;
-    } catch (error) {
-      console.warn('Direct Gemini call failed, trying Supabase:', error);
-      // Fallback to Supabase
-      return this.call('analyze', typeof payload === 'string' ? { text: payload, ...options } : { ...payload, ...options });
+      return normalizeAnalysisResponse(fallback?.data || fallback, text);
     }
   },
 
   async detectBias(content, type = 'text') {
-    // Try direct Gemini first for robustness
     try {
       const geminiKey = process.env.REACT_APP_GEMINI_API_KEY;
       if (!geminiKey || geminiKey === 'YOUR_GEMINI_API_KEY_HERE') throw new Error('No key');
@@ -183,21 +233,19 @@ RESPOND ONLY WITH A PURE JSON OBJECT:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 500 }
-        })
+          generationConfig: { temperature: 0.1, maxOutputTokens: 500 },
+        }),
       });
 
       if (!response.ok) throw new Error('API failed');
       const data = await response.json();
-      return JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text?.replace(/```json\n?|```/g, '') || '{}');
-    } catch (e) {
-      console.warn('Direct detectBias failed, trying Supabase:', e);
+      return parseJsonResponse(data.candidates?.[0]?.content?.parts?.[0]?.text, {});
+    } catch {
       return this.call('detect-bias', { content, type });
     }
   },
 
   async rewriteUnbiased(text, biasTypes = []) {
-    // Try direct Gemini first
     try {
       const geminiKey = process.env.REACT_APP_GEMINI_API_KEY;
       if (!geminiKey || geminiKey === 'YOUR_GEMINI_API_KEY_HERE') throw new Error('No key');
@@ -215,21 +263,32 @@ RESPOND ONLY WITH A PURE JSON OBJECT:
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
-        })
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
       });
 
       if (!response.ok) throw new Error('API failed');
       const data = await response.json();
-      return { rewrittenText: data.candidates?.[0]?.content?.parts?.[0]?.text || text };
-    } catch (e) {
-      console.warn('Direct rewrite failed, trying Supabase:', e);
-      return this.call('rewrite', { text, biasTypes });
+      const rewritten = sanitizeJsonString(data.candidates?.[0]?.content?.parts?.[0]?.text || text);
+      return { rewritten, rewrittenText: rewritten, explanation: 'Generated directly by Gemini.' };
+    } catch {
+      const fallback = await this.call('rewrite', { text, biasTypes });
+      if (fallback?.error) {
+        return {
+          rewritten: text,
+          rewrittenText: text,
+          explanation: 'Live rewrite is unavailable. Showing the original text to avoid losing user input.',
+        };
+      }
+      return {
+        rewritten: fallback?.rewritten || fallback?.rewrittenText || fallback?.data?.rewritten || fallback?.data?.rewrittenText || text,
+        rewrittenText: fallback?.rewrittenText || fallback?.rewritten || fallback?.data?.rewrittenText || fallback?.data?.rewritten || text,
+        explanation: fallback?.explanation || fallback?.data?.explanation || 'Rewritten via backend service.',
+      };
     }
   },
 
   async compareTexts(textA, textB) {
-    // Try direct Gemini first
     try {
       const geminiKey = process.env.REACT_APP_GEMINI_API_KEY;
       if (!geminiKey || geminiKey === 'YOUR_GEMINI_API_KEY_HERE') throw new Error('No key');
@@ -253,77 +312,15 @@ RESPOND ONLY WITH A PURE JSON OBJECT:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 1000 }
-        })
+          generationConfig: { temperature: 0.1, maxOutputTokens: 1000 },
+        }),
       });
 
       if (!response.ok) throw new Error('API failed');
       const data = await response.json();
-      const result = JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text?.replace(/```json\n?|```/g, '') || '{}');
-      return result;
-    } catch (e) {
-      console.warn('Direct compare failed, trying Supabase:', e);
+      return parseJsonResponse(data.candidates?.[0]?.content?.parts?.[0]?.text, {});
+    } catch {
       return this.call('compare', { textA, textB });
-    }
-  },
-
-  async getChatResponse(conversationHistory, analysisId = null) {
-    const message = conversationHistory[conversationHistory.length - 1]?.content || '';
-
-    try {
-      const geminiKey = process.env.REACT_APP_GEMINI_API_KEY;
-      if (!geminiKey || geminiKey === 'YOUR_GEMINI_API_KEY_HERE') {
-        // Mock chat response
-        return {
-          response: "I'm the Sovereign Arbiter. I notice you're exploring bias detection. To provide real AI assistance, please configure your Gemini API key in the settings. For now, here's some general guidance: Focus on using neutral language, consider multiple perspectives, and verify information with reliable sources.",
-          suggestions: [
-            "Use inclusive language that considers diverse viewpoints",
-            "Avoid absolute statements when possible",
-            "Consider the impact of your words on different audiences"
-          ]
-        };
-      }
-
-      const context = conversationHistory.slice(0, -1).map(m => `${m.role}: ${m.content}`).join('\n');
-      const prompt = `You are the Sovereign Arbiter - a specialized AI counselor focused on ethical governance and objective communication.
-
-Context: ${context}
-
-User: ${message}
-
-Respond as the Sovereign Arbiter: Provide helpful, ethical guidance on bias detection and objective communication. Be empathetic, educational, and actionable.`;
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 1000, topP: 0.9 }
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-      return {
-        response: rawText,
-        suggestions: [
-          "Consider multiple perspectives",
-          "Use evidence-based reasoning",
-          "Focus on inclusive language"
-        ]
-      };
-    } catch (error) {
-      console.warn('Direct Gemini chat call failed, trying Supabase:', error);
-      return this.call('chat', {
-        message: conversationHistory[conversationHistory.length - 1]?.content || '',
-        conversationHistory: conversationHistory.slice(0, -1),
-        analysisId,
-      });
     }
   },
 
@@ -343,7 +340,6 @@ Respond as the Sovereign Arbiter: Provide helpful, ethical guidance on bias dete
     return this.call('gdpr', { action: 'erasure' });
   },
 
-  // Database helpers
   async getHistory(userId) {
     const { data, error } = await supabase
       .from('analyses')
@@ -356,45 +352,11 @@ Respond as the Sovereign Arbiter: Provide helpful, ethical guidance on bias dete
   },
 
   async saveAnalysis(analysis) {
+    if (!isSupabaseConfigured) {
+      return analysis;
+    }
     const { data, error } = await supabase.from('analyses').insert([analysis]).select();
     if (error) throw error;
     return data[0];
-  },
-
-  async saveMessage(userId, role, content, analysisId = null) {
-    try {
-      const { data, error } = await supabase.from('messages').insert([{
-        user_id: userId,
-        role,
-        message_content: content,
-        analysis_id: analysisId,
-      }]).select();
-      if (error) throw error;
-      return data[0];
-    } catch (err) {
-      console.error('Error saving message:', err);
-      return null;
-    }
-  },
-
-  async getConversationHistory(userId, analysisId = null) {
-    try {
-      let query = supabase
-        .from('messages')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true });
-      
-      if (analysisId) {
-        query = query.eq('analysis_id', analysisId);
-      }
-      
-      const { data, error } = await query.limit(50);
-      if (error) throw error;
-      return data || [];
-    } catch (err) {
-      console.error('Error fetching conversation history:', err);
-      return [];
-    }
   },
 };

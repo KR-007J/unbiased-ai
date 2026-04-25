@@ -1,24 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
-import { auth } from '../firebase';
+import { auth, isFirebaseConfigured } from '../firebase';
 import { useStore } from '../store';
 import toast from 'react-hot-toast';
 import ReactorLogo from './ReactorLogo';
 import { motion } from 'framer-motion';
 
 const NAV = [
-  { to: '/app', label: 'DASHBOARD', icon: '◈', end: true, desc: 'System Overview' },
-  { to: '/app/analyze', label: 'SCAN', icon: '⬡', desc: 'Neural Text Analysis' },
-  { to: '/app/compare', label: 'DELTA', icon: '⟺', desc: 'Cross-Text Comparison' },
-  { to: '/app/chat', label: 'ARBITER', icon: '💬', desc: 'Neural Dialogue' },
-  { to: '/app/history', label: 'ARCHIVE', icon: '≡', desc: 'Audit History' },
-  { to: '/app/settings', label: 'CONFIG', icon: '⚙', desc: 'System Settings' },
+  { to: '/app', label: 'DASHBOARD', icon: '[ ]', end: true, desc: 'System Overview' },
+  { to: '/app/analyze', label: 'SCAN', icon: 'AI', desc: 'Neural Text Analysis' },
+  { to: '/app/compare', label: 'DELTA', icon: '<>', desc: 'Cross-Text Comparison' },
+  { to: '/app/history', label: 'ARCHIVE', icon: '==', desc: 'Audit History' },
+  { to: '/app/settings', label: 'CONFIG', icon: '::', desc: 'System Settings' },
 ];
 
 const NavItem = React.memo(({ item, sidebarOpen, isMobile, toggleSidebar }) => {
   return (
-    <NavLink to={item.to} end={item.end}
+    <NavLink
+      to={item.to}
+      end={item.end}
       className={`nav-link-cyber ${!sidebarOpen && !isMobile ? 'tooltip-cyber' : ''}`}
       data-tip={item.desc}
       onClick={() => isMobile && sidebarOpen && toggleSidebar()}
@@ -38,7 +39,8 @@ const NavItem = React.memo(({ item, sidebarOpen, isMobile, toggleSidebar }) => {
         boxShadow: isActive ? 'inset 0 0 20px rgba(0,245,255,0.05)' : 'none',
         overflow: 'hidden',
         whiteSpace: 'nowrap',
-      })}>
+      })}
+    >
       <span style={{ fontSize: 16, flexShrink: 0, filter: 'drop-shadow(0 0 4px currentColor)' }}>{item.icon}</span>
       {(sidebarOpen || (isMobile && sidebarOpen)) && <span>{item.label}</span>}
     </NavLink>
@@ -60,7 +62,11 @@ export default function Layout() {
   }, []);
 
   const handleLogout = async () => {
-    await signOut(auth);
+    if (isFirebaseConfigured && auth) {
+      await signOut(auth);
+    } else {
+      useStore.getState().setUser(null);
+    }
     toast.success('Session terminated');
     navigate('/');
   };
@@ -73,7 +79,6 @@ export default function Layout() {
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', flexDirection: isMobile ? 'column' : 'row' }}>
-      {/* Sidebar */}
       <aside style={{
         width: sidebarOpen ? 220 : (isMobile ? '100%' : 72),
         height: isMobile && !sidebarOpen ? 60 : '100%',
@@ -91,9 +96,8 @@ export default function Layout() {
         zIndex: 100,
         boxShadow: '4px 0 30px rgba(0,0,0,0.5)',
       }}>
-        {/* Logo */}
         <div style={{ padding: isMobile && !sidebarOpen ? '0' : '0 10px 32px', display: 'flex', alignItems: 'center', gap: 4, flex: isMobile && !sidebarOpen ? 1 : 'none' }}>
-          <ReactorLogo size={sidebarOpen ? "50px" : "40px"} isActive={isAnalyzing} />
+          <ReactorLogo size={sidebarOpen ? '50px' : '40px'} isActive={isAnalyzing} />
           {(sidebarOpen || isMobile) && (
             <div>
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, color: 'var(--cyan)', letterSpacing: 2 }}>UNBIASED</div>
@@ -102,38 +106,38 @@ export default function Layout() {
           )}
         </div>
 
-        {/* Toggle */}
-        <button onClick={toggleSidebar} style={{
-          position: isMobile && !sidebarOpen ? 'static' : 'absolute', 
-          top: 28, right: isMobile ? 16 : -12,
-          width: 32, height: 32, borderRadius: '8px',
-          background: 'rgba(0,245,255,0.1)', border: '1px solid rgba(0,245,255,0.3)',
-          color: 'var(--cyan)', cursor: 'pointer', fontSize: 14,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 10,
-        }}>
-          {sidebarOpen ? '⨉' : '☰'}
+        <button
+          onClick={toggleSidebar}
+          style={{
+            position: isMobile && !sidebarOpen ? 'static' : 'absolute',
+            top: 28, right: isMobile ? 16 : -12,
+            width: 32, height: 32, borderRadius: '8px',
+            background: 'rgba(0,245,255,0.1)', border: '1px solid rgba(0,245,255,0.3)',
+            color: 'var(--cyan)', cursor: 'pointer', fontSize: 14,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 10,
+          }}
+        >
+          {sidebarOpen ? '<' : '>'}
         </button>
 
-        {/* Nav */}
-        <nav style={{ 
-          flex: 1, 
-          display: (isMobile && !sidebarOpen) ? 'none' : 'flex', 
-          flexDirection: 'column', 
-          gap: 4, 
+        <nav style={{
+          flex: 1,
+          display: (isMobile && !sidebarOpen) ? 'none' : 'flex',
+          flexDirection: 'column',
+          gap: 4,
           padding: '0 12px',
-          overflowY: 'auto'
+          overflowY: 'auto',
         }}>
           {NAV.map((item) => (
             <NavItem key={item.to} item={item} sidebarOpen={sidebarOpen} isMobile={isMobile} toggleSidebar={toggleSidebar} />
           ))}
         </nav>
 
-        {/* User */}
-        <div style={{ 
-          padding: '16px 12px 0', 
+        <div style={{
+          padding: '16px 12px 0',
           borderTop: '1px solid rgba(0,245,255,0.08)',
-          display: (isMobile && !sidebarOpen) ? 'none' : 'block'
+          display: (isMobile && !sidebarOpen) ? 'none' : 'block',
         }}>
           {user && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', marginBottom: 8 }}>
@@ -159,12 +163,11 @@ export default function Layout() {
             </div>
           )}
           <button onClick={handleLogout} className="btn-secondary" style={{ width: '100%', justifyContent: 'center', display: 'flex', gap: 8, alignItems: 'center', padding: '8px 12px' }}>
-            <span>⏻</span>
+            <span>[x]</span>
             {sidebarOpen && <span>LOGOUT</span>}
           </button>
         </div>
 
-        {/* Footer Credit */}
         {sidebarOpen && (
           <div style={{
             padding: '24px 20px 8px',
@@ -177,12 +180,11 @@ export default function Layout() {
             <div style={{ color: 'var(--cyan)', fontWeight: 700, marginBottom: 4 }}>SOVEREIGN CORE</div>
             DEVELOPER: KRISH JOSHI<br />
             PARTNERS: GEMINI | ANTIGRAVITY<br />
-            © 2026 NEURAL SOVEREIGN
+            (C) 2026 NEURAL SOVEREIGN
           </div>
         )}
       </aside>
 
-      {/* Main */}
       <main style={{ flex: 1, overflow: 'auto', background: 'transparent' }}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}

@@ -2,12 +2,7 @@
 
 ## 🔥 TOP 5 IMMEDIATE WINS (Next 48 Hours)
 
-### 1. **Enable Chat Function** (2 hours)
-**Location**: `supabase/functions/chat/index.ts`
-- Currently disabled with 503 error
-- Implement conversational bias analysis with context
-- Add to UI immediately
-- **Why**: Shows feature completeness to judges
+
 
 ### 2. **Create Web Scan Function** (3 hours)
 **Location**: `supabase/functions/web-scan/index.ts` (NEW)
@@ -43,7 +38,7 @@
 
 | Feature | Difficulty | Impact | Priority |
 |---------|-----------|--------|----------|
-| Enable Chat | ⭐ Easy | ⭐⭐⭐⭐⭐ High | 🔴 P0 |
+
 | Web Scan | ⭐⭐ Medium | ⭐⭐⭐⭐⭐ High | 🔴 P0 |
 | Community Hub | ⭐⭐⭐ Medium | ⭐⭐⭐⭐ High | 🟠 P1 |
 | Analytics | ⭐⭐⭐ Medium | ⭐⭐⭐⭐ High | 🟠 P1 |
@@ -57,7 +52,7 @@
 
 ### PHASE 1: Quick Wins (Day 1-2) - Focus on Visible Impact
 ```
-[ ] 1. Enable Chat function
+
 [ ] 2. Create Web Scan API
 [ ] 3. Add Community Hub UI
 [ ] 4. Build Analytics Dashboard
@@ -135,65 +130,7 @@
 
 ## 🚀 CODE SNIPPETS TO START WITH
 
-### 1. Chat Function Starter
-```typescript
-// supabase/functions/chat/index.ts
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
-const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
-const GEMINI_MODEL = 'gemini-1.5-pro'
-
-serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') 
-    return new Response('ok', { headers: corsHeaders })
-
-  const { message, conversationHistory } = await req.json()
-  
-  const systemPrompt = `You are the Sovereign Arbiter - an AI specialized in ethical governance and bias detection.
-Your role is to:
-1. Help users understand bias in their content
-2. Provide ethical frameworks for objective communication
-3. Suggest inclusive alternatives
-4. Answer questions about bias detection
-5. Guide users toward more neutral, objective writing
-
-Always respond with empathy and provide actionable advice.`
-
-  // Build conversation with context
-  const contents = [
-    ...conversationHistory.map(msg => ({
-      role: msg.role,
-      parts: [{ text: msg.content }]
-    })),
-    {
-      role: 'user',
-      parts: [{ text: message }]
-    }
-  ]
-
-  // Call Gemini with streaming
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      body: JSON.stringify({
-        system: [{ text: systemPrompt }],
-        contents,
-        generationConfig: {
-          temperature: 0.7,
-          topP: 0.95,
-          maxOutputTokens: 1024
-        }
-      })
-    }
-  )
-
-  const data = await res.json()
-  const response = data.candidates[0].content.parts[0].text
-
-  return new Response(JSON.stringify({ response }))
-})
-```
 
 ### 2. Community Hub Component Starter
 ```javascript
@@ -311,9 +248,8 @@ export default function AnalyticsDashboard() {
 **Demo Flow (2 minutes)**:
 1. Show analyze page - scan some biased text
 2. Show web scan - analyze a real news article
-3. Show chat - ask ethical questions
-4. Show analytics - show personal improvement trends
-5. Show community hub - show social proof
+3. Show analytics - show personal improvement trends
+4. Show community hub - show social proof
 
 **Closing (30 seconds)**:
 "This is enterprise-grade, fully tested, and ready to integrate into any content workflow. We're open-sourcing it to help teams worldwide build more objective, inclusive communication."

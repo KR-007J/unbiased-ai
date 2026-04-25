@@ -13,7 +13,7 @@ This document outlines a comprehensive strategy to transform Unbiased AI into a 
 | Core Bias Detection | Working | 9/10 |
 | Rewrite/Neutralization | Working | 9/10 |
 | Compare Feature | Working | 8/10 |
-| Chat/Sovereign Arbiter | Working | 8/10 |
+
 | Web Scanning | Working | 8/10 |
 | Predictive Forecasting | Working | 7/10 |
 | Community Hub | Working | 8/10 |

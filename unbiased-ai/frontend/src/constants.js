@@ -15,5 +15,5 @@ export const BIAS_CATEGORIES = [
   { key: 'age', label: 'Age Bias', color: BIAS_COLORS.age },
   { key: 'cultural', label: 'Cultural Bias', color: BIAS_COLORS.cultural },
   { key: 'religious', label: 'Religious Bias', color: BIAS_COLORS.religious },
-  { key: 'socioeconomic', label: 'Socioeconomic', color: BIAS_COLORS.socioeconomic },
+  { key: 'socioeconomic', label: 'Socioeconomic Bias', color: BIAS_COLORS.socioeconomic },
 ];
