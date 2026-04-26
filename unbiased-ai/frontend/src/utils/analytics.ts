@@ -4,15 +4,15 @@ import mixpanel from 'mixpanel-browser';
 
 // Initialize Sentry
 export const initSentry = () => {
-  if (process.env.REACT_APP_SENTRY_DSN) {
+  if (import.meta.env.REACT_APP_SENTRY_DSN) {
     Sentry.init({
-      dsn: process.env.REACT_APP_SENTRY_DSN,
+      dsn: import.meta.env.REACT_APP_SENTRY_DSN,
       integrations: [new BrowserTracing()],
       tracesSampleRate: 1.0,
-      environment: process.env.NODE_ENV || 'development',
+      environment: import.meta.env.MODE || 'development',
       beforeSend: (event) => {
         // Filter out development errors in production
-        if (process.env.NODE_ENV === 'production' && event.exception) {
+        if (import.meta.env.MODE === 'production' && event.exception) {
           const error = event.exception.values?.[0];
           if (error?.value?.includes('development') || error?.value?.includes('localhost')) {
             return null;
@@ -26,9 +26,9 @@ export const initSentry = () => {
 
 // Initialize Mixpanel
 export const initAnalytics = () => {
-  if (process.env.REACT_APP_MIXPANEL_TOKEN) {
-    mixpanel.init(process.env.REACT_APP_MIXPANEL_TOKEN, {
-      debug: process.env.NODE_ENV === 'development',
+  if (import.meta.env.REACT_APP_MIXPANEL_TOKEN) {
+    mixpanel.init(import.meta.env.REACT_APP_MIXPANEL_TOKEN, {
+      debug: import.meta.env.MODE === 'development',
       track_pageview: true,
       persistence: 'localStorage',
     });
@@ -40,7 +40,7 @@ export const trackError = (error, context) => {
   console.error('Tracked error:', error, context);
 
   // Sentry
-  if (process.env.REACT_APP_SENTRY_DSN) {
+  if (import.meta.env.REACT_APP_SENTRY_DSN) {
     Sentry.captureException(error, {
       tags: {
         component: context?.component || 'unknown',
@@ -51,7 +51,7 @@ export const trackError = (error, context) => {
   }
 
   // Mixpanel
-  if (process.env.REACT_APP_MIXPANEL_TOKEN) {
+  if (import.meta.env.REACT_APP_MIXPANEL_TOKEN) {
     mixpanel.track('Error Occurred', {
       error: error.message,
       component: context?.component,
@@ -71,7 +71,7 @@ export const identifyUser = (userId, traits) => {
   });
 
   // Mixpanel
-  if (process.env.REACT_APP_MIXPANEL_TOKEN) {
+  if (import.meta.env.REACT_APP_MIXPANEL_TOKEN) {
     mixpanel.identify(userId);
     if (traits) {
       mixpanel.people.set(traits);
@@ -82,12 +82,12 @@ export const identifyUser = (userId, traits) => {
 // Event tracking
 export const trackEvent = (eventName, properties) => {
   // Console logging is disabled in production to optimize performance
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.MODE === 'development') {
     console.log('Tracked event:', eventName, properties);
   }
 
   // Mixpanel
-  if (process.env.REACT_APP_MIXPANEL_TOKEN) {
+  if (import.meta.env.REACT_APP_MIXPANEL_TOKEN) {
     mixpanel.track(eventName, {
       ...properties,
       timestamp: new Date().toISOString(),
@@ -98,12 +98,12 @@ export const trackEvent = (eventName, properties) => {
 // Performance tracking
 export const trackPerformance = (metricName, value, tags) => {
   // Sentry
-  if (process.env.REACT_APP_SENTRY_DSN) {
+  if (import.meta.env.REACT_APP_SENTRY_DSN) {
     // Sentry.metrics might not be available in all versions, using basic tracking for now
   }
 
   // Mixpanel
-  if (process.env.REACT_APP_MIXPANEL_TOKEN) {
+  if (import.meta.env.REACT_APP_MIXPANEL_TOKEN) {
     mixpanel.track('Performance Metric', {
       metric: metricName,
       value,

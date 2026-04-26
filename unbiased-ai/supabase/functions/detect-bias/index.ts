@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { validateFirebaseToken } from '../_shared/auth.ts'
 import {
   getCachedResult,
   setCachedResult,
@@ -45,19 +46,30 @@ const enhancedHandler = withRateLimit(async (req: Request) => {
     const sanitizedInput = sanitizeRequestInput(rawInput)
     const { content, type = 'text', cache = true, metadata = {} } = sanitizedInput
 
-    // Extract user ID from auth header (simplified)
+    // Validate Firebase JWT
     const authHeader = req.headers.get('authorization')
-    let userId: string | null = null
-    if (authHeader) {
-      // TODO: Properly decode JWT to extract user ID
-      userId = 'authenticated-user' // Placeholder
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify(createErrorResponse('Missing or invalid authorization header', 401)), {
+        status: 401,
+        headers: { ...corsHeaders, ...getSecurityHeaders(), 'Content-Type': 'application/json' }
+      })
+    }
+
+    const token = authHeader.split(' ')[1]
+    const userId = await validateFirebaseToken(token)
+
+    if (!userId) {
+      return new Response(JSON.stringify(createErrorResponse('Invalid session or unauthorized access', 403)), {
+        status: 403,
+        headers: { ...corsHeaders, ...getSecurityHeaders(), 'Content-Type': 'application/json' }
+      })
     }
 
     // Perform security check
-    const securityCheck = await performSecurityCheck(req, userId || undefined)
+    const securityCheck = await performSecurityCheck(req, userId)
     if (!securityCheck.passed) {
       // Log security violation
-      await logError(userId || 'unknown', new Error('Security check failed'), {
+      await logError(userId, new Error('Security check failed'), {
         endpoint: 'detect-bias',
         securityScore: securityCheck.score,
         issues: securityCheck.issues.length,

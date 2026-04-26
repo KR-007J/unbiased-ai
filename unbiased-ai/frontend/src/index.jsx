@@ -65,7 +65,7 @@ root.render(
 );
 
 // Service Worker registration with Workbox
-if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+if ('serviceWorker' in navigator && import.meta.env.MODE === 'production') {
   window.addEventListener('load', () => {
     // Import Workbox modules dynamically
     import('workbox-window').then(({ Workbox }) => {

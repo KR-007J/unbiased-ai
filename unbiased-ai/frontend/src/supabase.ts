@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
+import { auth } from './firebase';
 
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.REACT_APP_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.REACT_APP_SUPABASE_ANON_KEY;
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
@@ -124,9 +125,15 @@ export const api = {
     }
 
     try {
+      const token = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
+      const headers = {
+        ...apiHeaders,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
+
       const { data, error } = await supabase.functions.invoke(functionName, {
         body: payload,
-        headers: apiHeaders,
+        headers,
       });
 
       if (error) {
@@ -153,175 +160,84 @@ export const api = {
 
   async analyzeText(payload, options = {}) {
     const text = typeof payload === 'string' ? payload : payload.text;
-
-    try {
-      const geminiKey = process.env.REACT_APP_GEMINI_API_KEY;
-      if (!geminiKey || geminiKey === 'YOUR_GEMINI_API_KEY_HERE') {
-        return normalizeAnalysisResponse(buildMockAnalysis(text), text);
-      }
-
-      const prompt = `You are the Sovereign Neural Engine. Analyze the following discourse for systemic, implicit, and institutional bias across gender, racial, political, age, cultural, and socioeconomic vectors.
-
-INPUT DATA:
-"""
-${text}
-"""
-
-RESPOND ONLY WITH A PURE JSON OBJECT:
-{
-  "biasScore": <number 0.0 to 1.0>,
-  "confidence": <number 0.0 to 1.0>,
-  "biasTypes": {
-    "gender": <0-1>, "racial": <0-1>, "political": <0-1>, "age": <0-1>, "cultural": <0-1>, "socioeconomic": <0-1>
+    const fallback = await this.call('analyze', typeof payload === 'string' ? { text: payload, ...options } : { ...payload, ...options });
+    
+    if (fallback?.error) {
+      return normalizeAnalysisResponse(buildMockAnalysis(text), text);
+    }
+    return normalizeAnalysisResponse(fallback?.data || fallback, text);
   },
-  "biases": [
-    {
-      "type": "gender|racial|political|age|cultural|socioeconomic",
-      "text": "<exact string from input>",
-      "explanation": "<logical analysis of the bias vector>",
-      "confidence": <0-1>,
-      "suggestion": "<unbiased alternative phrase>",
-      "counterVector": "<An opposing perspective>",
-      "corroboratingTruth": "<A factual data point>"
-    }
-  ],
-  "summary": "<2-3 sentence executive summary>",
-  "severity": "low|medium|high|critical",
-  "propheticVector": "<Prediction of impact>",
-  "objectiveRefraction": "<Surgically rewritten version>",
-  "neuralSignature": "<16-char hex proof>"
-}`;
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 3000, topP: 0.95 },
-        }),
-      });
+  async streamAnalyze(payload, onChunk) {
+    if (!isSupabaseConfigured) throw new Error('Supabase not configured');
+    
+    const token = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
+    const response = await fetch(`${import.meta.env.REACT_APP_SUPABASE_URL}/functions/v1/analyze`, {
+      method: 'POST',
+      headers: {
+        ...apiHeaders,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ ...payload, stream: true }),
+    });
 
-      if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.status}`);
+    if (!response.ok) throw new Error(`Stream failed: ${response.statusText}`);
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      const chunk = decoder.decode(value);
+      // Gemini SSE can have multiple data: lines in one chunk
+      const lines = chunk.split('\n');
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            fullText += content;
+            onChunk(fullText);
+          } catch (e) {
+            console.error('Error parsing stream chunk', e);
+          }
+        }
       }
-
-      const data = await response.json();
-      return normalizeAnalysisResponse(parseJsonResponse(data.candidates?.[0]?.content?.parts?.[0]?.text), text);
-    } catch {
-      const fallback = await this.call('analyze', typeof payload === 'string' ? { text: payload, ...options } : { ...payload, ...options });
-      if (fallback?.error) {
-        return normalizeAnalysisResponse(buildMockAnalysis(text), text);
-      }
-      return normalizeAnalysisResponse(fallback?.data || fallback, text);
     }
+    
+    return parseJsonResponse(fullText);
   },
 
   async detectBias(content, type = 'text') {
-    try {
-      const geminiKey = process.env.REACT_APP_GEMINI_API_KEY;
-      if (!geminiKey || geminiKey === 'YOUR_GEMINI_API_KEY_HERE') throw new Error('No key');
-
-      const prompt = `Analyze this ${type} for bias. Respond with a brief JSON object containing score (0-1) and primary bias type.
-      
-      CONTENT:
-      """
-      ${content}
-      """`;
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 500 },
-        }),
-      });
-
-      if (!response.ok) throw new Error('API failed');
-      const data = await response.json();
-      return parseJsonResponse(data.candidates?.[0]?.content?.parts?.[0]?.text, {});
-    } catch {
-      return this.call('detect-bias', { content, type });
-    }
+    return this.call('detect-bias', { content, type });
   },
 
   async rewriteUnbiased(text, biasTypes = []) {
-    try {
-      const geminiKey = process.env.REACT_APP_GEMINI_API_KEY;
-      if (!geminiKey || geminiKey === 'YOUR_GEMINI_API_KEY_HERE') throw new Error('No key');
-
-      const prompt = `Rewrite this text to be completely neutral and unbiased, addressing these vectors: ${biasTypes.join(', ')}.
-      
-      TEXT:
-      """
-      ${text}
-      """
-      
-      Respond only with the rewritten text.`;
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-        }),
-      });
-
-      if (!response.ok) throw new Error('API failed');
-      const data = await response.json();
-      const rewritten = sanitizeJsonString(data.candidates?.[0]?.content?.parts?.[0]?.text || text);
-      return { rewritten, rewrittenText: rewritten, explanation: 'Generated directly by Gemini.' };
-    } catch {
-      const fallback = await this.call('rewrite', { text, biasTypes });
-      if (fallback?.error) {
-        return {
-          rewritten: text,
-          rewrittenText: text,
-          explanation: 'Live rewrite is unavailable. Showing the original text to avoid losing user input.',
-        };
-      }
+    const fallback = await this.call('rewrite', { text, biasTypes });
+    if (fallback?.error) {
       return {
-        rewritten: fallback?.rewritten || fallback?.rewrittenText || fallback?.data?.rewritten || fallback?.data?.rewrittenText || text,
-        rewrittenText: fallback?.rewrittenText || fallback?.rewritten || fallback?.data?.rewrittenText || fallback?.data?.rewritten || text,
-        explanation: fallback?.explanation || fallback?.data?.explanation || 'Rewritten via backend service.',
+        rewritten: text,
+        rewrittenText: text,
+        explanation: 'Live rewrite is unavailable. Showing the original text to avoid losing user input.',
       };
     }
+    return {
+      rewritten: fallback?.rewritten || fallback?.rewrittenText || fallback?.data?.rewritten || fallback?.data?.rewrittenText || text,
+      rewrittenText: fallback?.rewrittenText || fallback?.rewritten || fallback?.data?.rewrittenText || fallback?.data?.rewritten || text,
+      explanation: fallback?.explanation || fallback?.data?.explanation || 'Rewritten via backend service.',
+    };
   },
 
   async compareTexts(textA, textB) {
-    try {
-      const geminiKey = process.env.REACT_APP_GEMINI_API_KEY;
-      if (!geminiKey || geminiKey === 'YOUR_GEMINI_API_KEY_HERE') throw new Error('No key');
+    return this.call('compare', { textA, textB });
+  },
 
-      const prompt = `Compare these two texts for bias.
-      
-      TEXT A:
-      """
-      ${textA}
-      """
-      
-      TEXT B:
-      """
-      ${textB}
-      """
-      
-      Respond with a JSON object comparing their scores and identifying the less biased one.`;
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 1000 },
-        }),
-      });
-
-      if (!response.ok) throw new Error('API failed');
-      const data = await response.json();
-      return parseJsonResponse(data.candidates?.[0]?.content?.parts?.[0]?.text, {});
-    } catch {
-      return this.call('compare', { textA, textB });
-    }
+  async askArbiter(message, history = []) {
+    // Note: This feature is being replaced by Neural Engine logic in AnalyzePage
+    return this.call('chat', { message, history });
   },
 
   async getSystemHealth() {

@@ -16,6 +16,8 @@ import {
   ERROR_CODES
 } from '../_shared/api.ts'
 import { withRateLimit, RATE_LIMITS } from '../_shared/rate-limit.ts'
+import { validateFirebaseToken } from '../_shared/auth.ts'
+import { performSecurityCheck, sanitizeRequestInput, getSecurityHeaders } from '../_shared/security.ts'
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 const GEMINI_API_VERSION = 'v1'
@@ -37,27 +39,36 @@ const enhancedHandler = withRateLimit(async (req: Request) => {
   const requestId = `rewrite-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
   try {
-    const { text, biasTypes = [], metadata = {} } = await req.json()
+    const rawInput = await req.json()
+    const sanitizedInput = sanitizeRequestInput(rawInput)
+    const { text, biasTypes = [], metadata = {} } = sanitizedInput
 
-    // Validate input
-    const validation = validateContent(text, 5000)
-    if (!validation.valid) {
-      return new Response(JSON.stringify(createErrorResponse(validation.error!, 400)), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    // Validate Firebase JWT
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify(createErrorResponse('Missing or invalid authorization header', 401)), {
+        status: 401,
+        headers: { ...corsHeaders, ...getSecurityHeaders(), 'Content-Type': 'application/json' }
       })
     }
 
-    if (!GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY is not configured in Supabase secrets.')
+    const token = authHeader.split(' ')[1]
+    const userId = await validateFirebaseToken(token)
+
+    if (!userId) {
+      return new Response(JSON.stringify(createErrorResponse('Invalid session or unauthorized access', 403)), {
+        status: 403,
+        headers: { ...corsHeaders, ...getSecurityHeaders(), 'Content-Type': 'application/json' }
+      })
     }
 
-    // Extract user ID from auth header (simplified)
-    const authHeader = req.headers.get('authorization')
-    let userId: string | null = null
-    if (authHeader) {
-      // TODO: Properly decode JWT to extract user ID
-      userId = 'authenticated-user' // Placeholder
+    // Perform security check
+    const securityCheck = await performSecurityCheck(req, userId)
+    if (!securityCheck.passed) {
+      return new Response(JSON.stringify(createErrorResponse('Request blocked due to security policy', 403)), {
+        status: 403,
+        headers: { ...corsHeaders, ...getSecurityHeaders(), 'Content-Type': 'application/json' }
+      })
     }
 
     const supabase = SUPABASE_URL && SUPABASE_ANON_KEY
@@ -174,6 +185,7 @@ Respond ONLY with JSON:
     return new Response(JSON.stringify(response), {
       headers: {
         ...corsHeaders,
+        ...getSecurityHeaders(),
         'Content-Type': 'application/json',
         'X-Request-ID': requestId,
         'X-Model': GEMINI_MODEL

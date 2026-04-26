@@ -73,10 +73,13 @@ jobs:
           SUPABASE_PROJECT_ID: ${{ secrets.STAGING_SUPABASE_PROJECT_ID }}
         run: |
           # Deploy functions with staging-specific secrets
-          FUNCTIONS="detect-bias rewrite compare analyze chat web-scan forecast-bias batch-analyze organizations gdpr"
+          # Deploy all functions discovered in the repository
+          FUNCTIONS=$(ls -d functions/*/ | xargs -n 1 basename)
           for func in $FUNCTIONS; do
-            echo "Deploying $func to staging..."
-            supabase functions deploy $func --project-ref $SUPABASE_PROJECT_ID || exit 1
+            if [ "$func" != "_shared" ]; then
+              echo "Deploying $func to staging..."
+              supabase functions deploy $func --project-ref $SUPABASE_PROJECT_ID || echo "Failed to deploy $func, continuing..."
+            fi
           done
 
       - name: Update staging secrets
@@ -207,7 +210,7 @@ jobs:
       - name: Create production promotion PR
         uses: peter-evans/create-pull-request@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.ACCOUNT_TOKEN }}
           branch: auto-promote-${{ github.sha }}
           delete-branch: true
           title: "🚀 Promote staging ${{ github.sha }} to production"

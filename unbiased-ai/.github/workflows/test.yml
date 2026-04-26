@@ -47,14 +47,14 @@ jobs:
 
       - name: Run tests with coverage
         working-directory: ./frontend
-        run: npm test -- --coverage --watchAll=false --passWithNoTests --verbose
+        run: npm run test:coverage
         env:
           CI: true
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         with:
-          files: ./frontend/coverage/coverage-final.json
+          files: ./frontend/coverage/lcov.info
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
@@ -67,13 +67,12 @@ jobs:
 
       - name: Build application
         working-directory: ./frontend
-        run: GENERATE_SOURCEMAP=false npm run build
+        run: npm run build
 
       - name: Analyze bundle size
         working-directory: ./frontend
         run: |
           echo "Analyzing bundle size..."
-          npx webpack-bundle-analyzer build/static/js/*.js --output build/bundle-analysis.html || echo "Bundle analyzer not available"
 
           BUILD_SIZE=$(du -sh build | cut -f1)
           BUILD_BYTES=$(du -sb build | cut -f1)
@@ -92,6 +91,9 @@ jobs:
       - name: Performance audit (Lighthouse)
         working-directory: ./frontend
         run: |
+          npm install -g serve
+          serve -s build -l 3000 &
+          sleep 5
           npx lighthouse http://localhost:3000 --output=json --output-path=./lighthouse-results.json --chrome-flags="--headless --disable-gpu --no-sandbox" || echo "Lighthouse audit failed"
 
       - name: Archive build artifacts
@@ -152,7 +154,7 @@ jobs:
         uses: github/super-linter/slim@v5
         env:
           DEFAULT_BRANCH: main
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.ACCOUNT_TOKEN }}
           VALIDATE_ALL_CODEBASE: false
           VALIDATE_JAVASCRIPT_ES: true
           VALIDATE_TYPESCRIPT: true
@@ -197,7 +199,7 @@ jobs:
 
       - name: Build application
         working-directory: ./frontend
-        run: GENERATE_SOURCEMAP=false npm run build
+        run: npm run build
 
       - name: Run accessibility tests
         working-directory: ./frontend
@@ -227,7 +229,7 @@ jobs:
 
       - name: Build application
         working-directory: ./frontend
-        run: GENERATE_SOURCEMAP=false npm run build
+        run: npm run build
 
       - name: Performance testing with Lighthouse
         uses: treosh/lighthouse-ci-action@v10
@@ -262,7 +264,7 @@ jobs:
 
       - name: Build application
         working-directory: ./frontend
-        run: GENERATE_SOURCEMAP=false npm run build
+        run: npm run build
 
       - name: Run E2E tests with Playwright
         working-directory: ./frontend

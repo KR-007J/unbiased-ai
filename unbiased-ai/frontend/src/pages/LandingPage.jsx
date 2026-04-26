@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 
 const TYPEWRITER_TEXTS = [
   'Detecting Gender Bias...',
@@ -15,6 +15,7 @@ const FEATURES = [
   { icon: 'FWD', title: 'Prophetic Forecasting', desc: 'Predict how bias vectors could escalate sentiment across future discourse cycles.', color: 'var(--magenta)' },
   { icon: 'LOG', title: 'Audit Immutable Log', desc: 'Persistent audit history for every analysis, trend, and evidence trail.', color: 'var(--gold)' },
   { icon: 'AI', title: 'Confidence Gradient', desc: 'Confidence scoring with a clear breakdown of each finding.', color: 'var(--green)' },
+  { icon: '??', title: 'Neural Arbiter', desc: 'Conversational AI consultant available 24/7 for complex bias mitigation strategies.', color: 'var(--cyan)' },
 ];
 
 export default function LandingPage() {
@@ -48,6 +49,17 @@ export default function LandingPage() {
 
   return (
     <div style={{ minHeight: '100vh', overflow: 'hidden auto' }}>
+      <Helmet>
+        <title>Unbiased AI | Sovereign Neural Engine</title>
+        <meta name="description" content="The world's most advanced AI bias detection and neutralization platform. Powered by Gemini 1.5 Flash." />
+        <meta name="keywords" content="AI bias, detect bias, neutral rewrite, fairness, machine learning, Gemini 1.5" />
+        <meta property="og:title" content="Unbiased AI | Sovereign Neural Engine" />
+        <meta property="og:description" content="Detect manipulative phrasing and generate fair rewrites in real-time." />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="theme-color" content="#00f5ff" />
+      </Helmet>
+
       <section style={{
         minHeight: '100vh',
         display: 'flex',
@@ -75,7 +87,7 @@ export default function LandingPage() {
             letterSpacing: 2,
           }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 8px var(--green)', display: 'inline-block', animation: 'pulse-cyan 2s infinite' }} />
-            SOVEREIGN INTELLIGENCE | POWERED BY GEMINI 1.5
+            SOVEREIGN INTELLIGENCE | POWERED BY GEMINI 1.5 FLASH (24/7 ACTIVE)
           </div>
 
           <h1 style={{

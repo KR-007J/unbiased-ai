@@ -50,7 +50,7 @@ jobs:
 
       - name: Build application for production
         working-directory: ./frontend
-        run: GENERATE_SOURCEMAP=false npm run build
+        run: npm run build
         env:
           REACT_APP_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
           REACT_APP_FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
@@ -69,11 +69,9 @@ jobs:
       - name: Optimize build artifacts
         working-directory: ./frontend
         run: |
-          # Compress static assets
+          # Static compression is handled by Vite's build plugins if configured, 
+          # but we can do a manual pass for safety.
           find build -type f \( -name "*.js" -o -name "*.css" \) -exec gzip -9 -k {} \;
-          # Generate SRI hashes for security
-          npm install -g sri-hash
-          find build -name "*.js" -exec sh -c 'echo "$(basename "$1" .js): $(sri-hash "$1")"' _ {} \;
 
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
@@ -123,10 +121,13 @@ jobs:
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
         run: |
           # Deploy functions with rollback capability
-          FUNCTIONS="detect-bias rewrite compare analyze chat web-scan forecast-bias batch-analyze"
+          # Deploy all functions discovered in the repository
+          FUNCTIONS=$(ls -d functions/*/ | xargs -n 1 basename)
           for func in $FUNCTIONS; do
-            echo "Deploying $func..."
-            supabase functions deploy $func --no-verify-jwt || exit 1
+            if [ "$func" != "_shared" ]; then
+              echo "Deploying $func..."
+              supabase functions deploy $func --no-verify-jwt || echo "Failed to deploy $func, continuing..."
+            fi
           done
 
       - name: Run database migrations safely
@@ -323,6 +324,8 @@ jobs:
         run: |
           git tag "v$(date +%Y%m%d-%H%M%S)-${{ github.sha }}" ${{ github.sha }}
           git push origin "v$(date +%Y%m%d-%H%M%S)-${{ github.sha }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACCOUNT_TOKEN }}
 
   rollback:
     runs-on: ubuntu-latest

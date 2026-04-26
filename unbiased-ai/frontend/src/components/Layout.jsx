@@ -11,6 +11,7 @@ const NAV = [
   { to: '/app', label: 'DASHBOARD', icon: '[ ]', end: true, desc: 'System Overview' },
   { to: '/app/analyze', label: 'SCAN', icon: 'AI', desc: 'Neural Text Analysis' },
   { to: '/app/compare', label: 'DELTA', icon: '<>', desc: 'Cross-Text Comparison' },
+  { to: '/app/arbiter', label: 'ARBITER', icon: '??', desc: 'Conversational Analysis' },
   { to: '/app/history', label: 'ARCHIVE', icon: '==', desc: 'Audit History' },
   { to: '/app/settings', label: 'CONFIG', icon: '::', desc: 'System Settings' },
 ];

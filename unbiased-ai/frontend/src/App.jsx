@@ -6,6 +6,7 @@ import { auth, isFirebaseConfigured } from './firebase';
 import { useStore } from './store';
 import { useMonitoring } from './hooks/useMonitoring';
 import { identifyUser, trackEvent } from './utils/analytics';
+import { HelmetProvider } from 'react-helmet-async';
 import './styles/globals.css';
 
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -115,80 +116,83 @@ export default function App() {
   }, [trackComponentError]);
 
   return (
-    <Router>
-      <Suspense fallback={<div className="app-root" />}>
-        <div className="app-root">
-          <div className="grid-overlay" />
-          <div className="scanline" />
-          <ParticleField />
-          <CustomCursor />
+    <HelmetProvider>
+      <Router>
+        <Suspense fallback={<div className="app-root" />}>
+          <div className="app-root">
+            <div className="grid-overlay" />
+            <div className="scanline" />
+            <ParticleField />
+            <CustomCursor />
 
-          {!isFirebaseConfigured && (
+            {!isFirebaseConfigured && (
+              <div style={{
+                position: 'fixed',
+                top: 16,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                zIndex: 9999,
+                padding: '10px 16px',
+                borderRadius: 999,
+                border: '1px solid rgba(255, 184, 0, 0.35)',
+                background: 'rgba(35, 24, 0, 0.9)',
+                color: '#ffcf66',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 11,
+                letterSpacing: 1,
+              }}>
+                Demo mode active: Firebase auth is not configured.
+              </div>
+            )}
+
             <div style={{
               position: 'fixed',
-              top: 16,
-              left: '50%',
-              transform: 'translateX(-50%)',
+              bottom: 20,
+              right: 20,
               zIndex: 9999,
-              padding: '10px 16px',
-              borderRadius: 999,
-              border: '1px solid rgba(255, 184, 0, 0.35)',
-              background: 'rgba(35, 24, 0, 0.9)',
-              color: '#ffcf66',
+              pointerEvents: 'none',
+              opacity: 0.4,
               fontFamily: 'var(--font-mono)',
-              fontSize: 11,
-              letterSpacing: 1,
+              fontSize: 10,
+              letterSpacing: 2,
+              color: 'var(--cyan)',
+              textAlign: 'right',
+              textShadow: '0 0 5px var(--cyan)',
             }}>
-              Demo mode active: Firebase auth is not configured.
+              DEVELOPER: KRISH JOSHI<br />
+              PARTNERS: GEMINI & ANTIGRAVITY<br />
+              <span style={{ fontSize: 8 }}>SOVEREIGN TRUTH ENGINE v2.5</span>
             </div>
-          )}
 
-          <div style={{
-            position: 'fixed',
-            bottom: 20,
-            right: 20,
-            zIndex: 9999,
-            pointerEvents: 'none',
-            opacity: 0.4,
-            fontFamily: 'var(--font-mono)',
-            fontSize: 10,
-            letterSpacing: 2,
-            color: 'var(--cyan)',
-            textAlign: 'right',
-            textShadow: '0 0 5px var(--cyan)',
-          }}>
-            DEVELOPER: KRISH JOSHI<br />
-            PARTNERS: GEMINI & ANTIGRAVITY<br />
-            <span style={{ fontSize: 8 }}>SOVEREIGN TRUTH ENGINE v2.5</span>
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                style: {
+                  background: 'rgba(5, 12, 35, 0.95)',
+                  border: '1px solid rgba(0, 245, 255, 0.3)',
+                  color: 'rgba(220, 240, 255, 0.95)',
+                  fontFamily: 'Exo 2, sans-serif',
+                  backdropFilter: 'blur(20px)',
+                  boxShadow: '0 0 20px rgba(0, 245, 255, 0.2)',
+                },
+              }}
+            />
+
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/app" element={<PrivateRoute><Layout /></PrivateRoute>}>
+                <Route index element={<Dashboard />} />
+                <Route path="analyze" element={<AnalyzePage />} />
+                <Route path="compare" element={<ComparePage />} />
+                <Route path="history" element={<HistoryPage />} />
+                <Route path="settings" element={<SettingsPage />} />
+              </Route>
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
           </div>
-
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              style: {
-                background: 'rgba(5, 12, 35, 0.95)',
-                border: '1px solid rgba(0, 245, 255, 0.3)',
-                color: 'rgba(220, 240, 255, 0.95)',
-                fontFamily: 'Exo 2, sans-serif',
-                backdropFilter: 'blur(20px)',
-                boxShadow: '0 0 20px rgba(0, 245, 255, 0.2)',
-              },
-            }}
-          />
-
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/app" element={<PrivateRoute><Layout /></PrivateRoute>}>
-              <Route index element={<Dashboard />} />
-              <Route path="analyze" element={<AnalyzePage />} />
-              <Route path="compare" element={<ComparePage />} />
-              <Route path="history" element={<HistoryPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-            </Route>
-          </Routes>
-        </div>
-      </Suspense>
-    </Router>
+        </Suspense>
+      </Router>
+    </HelmetProvider>
   );
 }
